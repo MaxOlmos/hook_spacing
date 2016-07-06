@@ -2,7 +2,7 @@
 ### ------------------------------------------------------------
 ## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
 ## and full spatio-temporal (ST)
-Version <- "models/spatiotemporal_cpue_spacing"
+Version <- "spatiotemporal_cpue_spacing"
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
 ## Test model is working
@@ -10,8 +10,6 @@ Inputs <- make.inputs(n_knots=20, model='NS', likelihood=1)
 Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                  random=Inputs$Random, map=Inputs$Map)
 Obj$fn()
-Obj$gr()
-Obj$par
 Obj$env$beSilent()
 temp <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
                  control=list(trace=10, eval.max=1e4, iter.max=1e4))
@@ -23,7 +21,7 @@ hist(report.temp$spacing)
 sd.temp <- sdreport(Obj)
 value.spacing <- sd.temp$value[grep('spacing_std', x=names(sd.temp$value))]
 sd.spacing <- sd.temp$sd[grep('spacing_std', x=names(sd.temp$value))]
-df.spacing <- data.frame(ft=0:79, value=value.spacing, sd=sd.spacing)[-1,]
+df.spacing <- data.frame(ft=seq_along(value.spacing), value=value.spacing, sd=sd.spacing)[-1,]
 ggplot(df.spacing, aes(ft, value, ymin=value-2*sd, ymax=value+2*sd)) + geom_errorbar()
 
 plot(resids~spacing, data=temp2)
