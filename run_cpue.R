@@ -1,8 +1,7 @@
 
-
 ### ------------------------------------------------------------
-## Step 2. Run models. Models= no spatial effect (M1), spatial strata on
-## statarea (M2), and full spatiotemporal (M3)
+## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
+## and full spatio-temporal (ST)
 Version <- "models/spatiotemporal_cpue_spacing"
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
