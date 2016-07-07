@@ -5,10 +5,14 @@ Version <- "spatiotemporal_cpue_spacing"
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
 ## ## Test model is working
-## Inputs <- make.inputs(n_knots=20, model='ST', likelihood=1)
+## Inputs <- make.inputs(n_knots=500, model='ST', likelihood=1)
 ## Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
 ##                  random=Inputs$Random, map=Inputs$Map)
 ## Obj$fn()
+## Obj$env$beSilent()
+## temp <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
+##                control=list(trace=50, eval.max=1e4, iter.max=1e4))
+
 
 ## Loop through each model, running and saving results.
 n_knots <- 500
