@@ -1,39 +1,23 @@
-library(TMB)
-library(plyr)
-
-## Prep the data for JAGS:
-## Vector of int representing which experiment it was from
+## load and process the empirical data
 hs <- read.csv("hs_data.csv")
 hs <- subset(hs, used=="Y")             #
 hs$hooks <- with(hs, hooks.per.skate*skates)
 hs <- within(hs, {catch.per.hook=lbs/hooks; number.per.hook=number/hooks})
-sum(hs$number)                   # seems to match the paper
-sum(hs$lbs)                      # seems to match the paper
 ## A unique identifier for each row, for merging later
 hs$rowID <- 1:nrow(hs)
 ## Normalize days
 hs$date <- lubridate::mdy(as.character(hs$date))
-temp <- ddply(hs, .(group), summarize,
-              daynumber=as.numeric(difftime(date,min(date), units="days")),
-              rowID=rowID)
-hs <- merge(hs, temp, by="rowID", all.y=FALSE )
-hs$group <- hs$group.x
-temp <- hs$group.x <-  hs$group.y <- NULL
+temp <- ddply(hs, .(group), mutate,
+              daynumber=as.numeric(difftime(date,min(date), units="days")))
 hs <- hs[with(hs, order(group, date)),]
 hs$group <- as.numeric(hs$group)
-## names(hs)
-spacing <- hs$spacing
-hs$group <- as.numeric(hs$group)
-group <- hs$group
 ## The dependent variable (catch.per.hook for now) on log scale since it
 ## needs to be positive
-## logy <- log(hs$catch.per.hook+.1)
 yobs <- hs$catch.per.hook
 log.yobs <- log(yobs+.1)
 Nobs <- length(yobs)
 Ngroup <- length(unique(group))
 day <- hs$daynumber
-
 g <- ggplot()+
     geom_line(data=hs, aes(x=spacing, y=catch.per.hook, group=daynumber,
               colour=daynumber), size=.5)  + xlim(0, 45)+ xlab("spacing (ft)")+
@@ -87,12 +71,10 @@ lower['sigma_obs_sd'] <- 0; upper['sigma_obs_sd'] <- Inf
 
 Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                  random=Inputs$Random, map=Inputs$Map)
-Obj$fn()
-Obj$env$beSilent()
-temp <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
+Opt <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
                control=list(trace=10, eval.max=1e4, iter.max=1e4),
                             lower=lower, upper=upper)
-test <- sdreport(Obj)
-sd.df <- data.frame(spacing=1:70, value=test$value, sd=test$sd)
-ggplot(sd.df, aes(spacing, value, ymax=value+2*sd, ymin=value-2*sd)) +
-  geom_errorbar()
+temp <- sdreport(Obj)
+uncertainty.df <- data.frame(spacing=1:70, value=temp$value, sd=temp$sd)
+empirical.results <- list(Obj=Obj, Opt=Opt, sdreport=temp, uncertainty.df=uncertainty.df)
+saveRDS(empirical.results, file='results/empirical.results.RDS')
