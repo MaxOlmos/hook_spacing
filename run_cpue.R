@@ -31,6 +31,8 @@ for(m in c('NS', "S", "ST")){
   Report.list[[m]]$time <- as.numeric(difftime(Sys.time(),start,
                                                units='mins'))
   SD.list[[m]] <- sdreport(Obj)
+  ##  make.model.plots(
+
 }
 saveRDS(Report.list, 'report_models.RDS')
 saveRDS(SD.list, 'sd_models.RDS')
