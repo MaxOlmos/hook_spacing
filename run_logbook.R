@@ -1,7 +1,7 @@
 ### ------------------------------------------------------------
 ## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
 ## and full spatio-temporal (ST)
-Version <- "spatiotemporal_cpue_spacing"
+Version <- "models/spatiotemporal_cpue_spacing"
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
 ## ## Test model is working
@@ -37,71 +37,9 @@ for(m in c('NS', "S", "ST")){
   ##  make.model.plots(
 
 }
-saveRDS(Report.list, 'report_models.RDS')
-saveRDS(SD.list, 'sd_models.RDS')
+saveRDS(Report.list, 'results/report_models.RDS')
+saveRDS(SD.list, 'results/sd_models.RDS')
 
-## Process the results and make plots
-Report.list <- readRDS('report_models.RDS')
-Results <- do.call(rbind, lapply(Report.list, function(x)
-  data.frame(x[c('intercept', 'beta_depth','SigmaE', 'Range', 'Sigma',
-                 'SigmaO', 'jnll', 'time')])))
-Results$model <- c('M1', "M2", "M3")
-SD.list <- readRDS('sd_models.RDS')
-cpue.trends <- (lapply(SD.list, function(x)
-  data.frame(year=1995:2012, cpue=x['value'], se=x['sd'])))
-cpue.trends <- melt(cpue.trends, id.vars=c('year', 'value', 'sd'))
-names(cpue.trends) <- c('year', 'cpue', 'sd', 'model')
-cpue.trends <- within(cpue.trends, {
-                        lwr=cpue-sd
-                        upr=cpue+sd})
-
-## CPUE trends with and without errors
-g <- ggplot(cpue.trends, aes(year, cpue, group=model, color=model)) +
-  geom_line() + ylab("Relative CPUE")
-ggsave('plots/cpue_trends.png', g, width=ggwidth, height=ggheight)
-g <- ggplot(cpue.trends, aes(year, cpue, ymin=lwr, ymax=upr)) +
-  geom_linerange(color=gray(.5)) + geom_point()+ylab("Relative CPUE") + facet_wrap('model')
-ggsave('plots/cpue_trends_errorbars.png', g, width=ggwidth, height=ggheight)
-
-## Model parameters and meta data
-Results.long <- melt(Results, id.vars='model')
-g <- ggplot(Results.long, aes(model, (value), group=variable)) +
-  facet_wrap('variable', scales='free_y') + geom_line()
-ggsave('plots/results_by_model.png', g, width=ggwidth, height=ggheight)
-qqplots <- ldply(Report.list, function(x){
-                   xx <- qqnorm(y=x$resids, plot=FALSE)
-                 return(data.frame(xx))})
-g <- ggplot(qqplots, aes(x,y)) + geom_point() + facet_wrap('.id') + geom_abline(slope=1,intercept=0)
-ggsave('plots/qqresids.png', g, width=ggwidth, height=ggheight)
-
-## Plots of resids to see if there's a spatial trend removed
-df$resids.M1 <- Report.list[['M1']]$resids
-df$resids.M2 <- Report.list[['M2']]$resids
-df$resids.M3 <- Report.list[['M3']]$resids
-col.scale <-  scale_colour_distiller(palette='Spectral', limits=c(-3,3)) #scale_color_continuous(low='blue', high='red')
-myxlim <- xlim(-155,-145); myylim <- ylim(56,61);
-## Some global ones
-g <- ggplot(df, aes(longitude, latitude, color=resids.M1)) +
-  geom_point(alpha=1, size=.15) + col.scale
-ggsave('plots/spatial_errors_M1.png',g, width=ggwidth, height=ggheight)
-g <- ggplot(df, aes(longitude, latitude, color=resids.M2)) +
-  geom_point(alpha=1, size=.15) + col.scale
-ggsave('plots/spatial_errors_M2.png',g, width=ggwidth, height=ggheight)
-g <- ggplot(df, aes(longitude, latitude, color=resids.M3)) +
-  geom_point(alpha=1, size=.15) + col.scale
-ggsave('plots/spatial_errors_M3.png',g, width=ggwidth, height=ggheight)
-
-for(yr in unique(df$year)){
-g <- ggplot(subset(df, year==yr), aes(longitude, latitude, color=resids.M1)) +
-  geom_point(alpha=1, size=.5) + col.scale + myxlim+myylim
-ggsave(paste0('plots/annual/spatial_errors_',yr,'_M1.png'),g, width=7, height=4)
-g <- ggplot(subset(df, year==yr), aes(longitude, latitude, color=resids.M2)) +
-  geom_point(alpha=1, size=.5) + col.scale + myxlim+myylim
-ggsave(paste0('plots/annual/spatial_errors_',yr,'_M2.png'),g, width=7, height=4)
-g <- ggplot(subset(df, year==yr), aes(longitude, latitude, color=resids.M3)) +
-  geom_point(alpha=1, size=.5) + col.scale + myxlim+myylim
-ggsave(paste0('plots/annual/spatial_errors_',yr,'_M3.png'),g, width=7, height=4)
-}
 
 
 ### OLD CODE
