@@ -1,8 +1,8 @@
 ## Libraries used
-library( TMB )
-library( INLA )
-library( RandomFields )
-library( RANN )
+library(TMB)
+library(INLA)
+library(RandomFields)
+library(RANN)
 library(ggplot2)
 library(plyr)
 library(reshape2)
@@ -10,9 +10,7 @@ library(maps)
 library(maptools)
 library(mapdata)
 library(lubridate)
-library(TMBdebug)
 ## data(wordHiresMapEnv)
-
 
 ## Global settings, mostly for plots
 ggwidth <- 7
