@@ -66,7 +66,7 @@ make.inputs <- function(n_knots, model, likelihood=1, n_points_area=1e4, ...){
   model <- match.arg(model, choices=c('NS', "S", "ST"))
   Data <- list(likelihood=likelihood, cph_i=df$cph,
                n_t=length(unique(df$year)),
-               n_ft=80,
+               n_ft=max(df$spacing),
                s_i=spde$cluster-1,
                spacing_i=df$spacing,
                year_i=as.numeric(df$year)-1,
@@ -83,7 +83,7 @@ make.inputs <- function(n_knots, model, likelihood=1, n_points_area=1e4, ...){
                  beta_hooksize=rep(0, length(levels(df$hooksize))),
                  beta_depth=0, ln_tau_O=-.6, ln_tau_E=.25,
                  ln_kappa=.3,  ln_obs=-.2,
-                 ln_spacing=0, spacing0=0, spacing_devs=rep(0, length=Data$n_ft-1),
+                 ln_spacing=0, spacing_devs=rep(0, length=Data$n_ft),
                  omega_s=rep(0,spde$mesh$n),
                  epsilon_st=matrix(0,nrow=nrow(Data$M0),ncol=Data$n_t))
   Random <- list(NS=c('spacing_devs'),

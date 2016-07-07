@@ -27,7 +27,7 @@ Type objective_function<Type>::operator() ()
   DATA_INTEGER(likelihood); // the likelihood function to use
   DATA_FACTOR(s_i);  // Random effect index for observation i
   DATA_INTEGER(n_t); // number of years
-  DATA_INTEGER(n_ft); // number of spacings.. 1:n_ft
+  DATA_INTEGER(n_ft); // number of spacings.. 1:n_ft, with ft(0)=0 assumed
   // Indices for factors
   DATA_FACTOR(spacing_i);
   DATA_FACTOR(year_i);
@@ -49,7 +49,6 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(beta_month);	   // month effect
   PARAMETER_VECTOR(beta_hooksize); // hooksize effect
   PARAMETER(beta_depth);	   // depth effect
-  PARAMETER(spacing0);		   // hook spacing effect at ft=0
   // Variances
   PARAMETER(ln_tau_O);		  // spatial process
   PARAMETER(ln_tau_E);		  // spatio-temporal process
@@ -57,7 +56,7 @@ Type objective_function<Type>::operator() ()
   PARAMETER(ln_obs);		  // Observation variance
   PARAMETER(ln_spacing);	  // Hook spacing effect
   // Random effects
-  PARAMETER_VECTOR(spacing_devs); // hook spacing (ft); n_ft-1 length
+  PARAMETER_VECTOR(spacing_devs); // hook spacing; n_ft length
   PARAMETER_VECTOR(omega_s);	  // spatial effects
   // This is a matrix of (centers by years)
   PARAMETER_ARRAY(epsilon_st);	// spatio-temporal effects
@@ -77,16 +76,15 @@ Type objective_function<Type>::operator() ()
     Q = exp(4*ln_kappa)*M0 + Type(2.0)*exp(2*ln_kappa)*M1 + M2;
   // Calculate the spacing effects by foot (random effects)
   vector<Type> spacing(n_ft+1); // n+1 since ft=0 is included
-  spacing(0)=spacing0; // this is for ft=0
+  spacing(0)=0; // this is for ft=0
   for(int ft=1; ft<=n_ft; ft++){
     // Additive effect of hook spacing for a given foot
     spacing(ft)=spacing(ft-1)+spacing_devs(ft-1);
   }
   // Standardized effect of spacing
   vector<Type> spacing_std(n_ft+1);
-  for(int ft=0; ft<=n_ft; ft++){
+  for(int ft=0; ft<=n_ft; ft++)
     spacing_std(ft)=spacing(ft)/spacing(18);
-  }
 
   // The model predictions for each observation
   vector<Type> mu_i(n_i);
@@ -105,7 +103,7 @@ Type objective_function<Type>::operator() ()
     jnll_comp(2) += SCALE( GMRF(Q), 1/exp(ln_tau_E) )( epsilon_st.col(t) );
     // hook spacing effects
   Type test=0;		// for some reason had to do as separate variable??
-  for(int ft=0; ft<(n_ft-1); ft++)  // The length of the devs is (n-1)
+  for(int ft=0; ft<n_ft; ft++)
     test -= dnorm(Type(0.0), spacing_devs(ft),exp(ln_spacing), true);
 
   // Probability of the data, given random effects

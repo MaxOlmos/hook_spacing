@@ -1,73 +1,22 @@
 
-
 ### ------------------------------------------------------------
-## Step 2. Run models. Models= no spatial effect (M1), spatial strata on
-## statarea (M2), and full spatiotemporal (M3)
-Version <- "models/spatiotemporal_cpue_spacing"
+## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
+## and full spatio-temporal (ST)
+Version <- "spatiotemporal_cpue_spacing"
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
-## Test model is working
-Inputs <- make.inputs(n_knots=20, model='NS', likelihood=1)
-Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
-                 random=Inputs$Random, map=Inputs$Map)
-Obj$fn()
-Obj$gr()
-Obj$par
-Obj$env$beSilent()
-temp <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
-                 control=list(trace=10, eval.max=1e4, iter.max=1e4))
-report.temp <- Obj$report()
-temp2 <- data.frame(resids=report.temp$resids, spacing=df$spacing)
-plot(report.temp$spacing_std)
-plot(report.temp$spacing)
-hist(report.temp$spacing)
-sd.temp <- sdreport(Obj)
-value.spacing <- sd.temp$value[grep('spacing_std', x=names(sd.temp$value))]
-sd.spacing <- sd.temp$sd[grep('spacing_std', x=names(sd.temp$value))]
-df.spacing <- data.frame(ft=0:79, value=value.spacing, sd=sd.spacing)[-1,]
-ggplot(df.spacing, aes(ft, value, ymin=value-2*sd, ymax=value+2*sd)) + geom_errorbar()
-
-plot(resids~spacing, data=temp2)
-
-
-## Increase spatial resolution and see what happens
-knots <- c(100, 150, 200, 300, 500, 800, 1000)
-Opt.list <- Report.list <- SD.list <- list()
-m <- 'M3'
-for(k in knots){
-  print(paste0('Starting knots: ', k))
-  Inputs <- make.inputs(k, m)
-  Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
-                   random=Inputs$Random, map=Inputs$Map)
-  trash <- Obj$env$beSilent()
-  start <- Sys.time()
-  temp <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
-                 control=list(trace=50, eval.max=1e4, iter.max=1e4))
-  Opt.list[[k]] <- nlminb( start=temp$par, objective=Obj$fn, gradient=Obj$gr,
-                     control=list(trace=50, eval.max=1e4, iter.max=1e4))
-  Opt.list[[k]][["final_diagnostics"]] <-
-    data.frame( "Name"=names(Obj$par),
-               "final_gradient"=as.numeric(Obj$gr(Opt.list[[k]]$par)))
-  Report.list[[k]] <- Obj$report()
-  Report.list[[k]]$time <-
-      as.numeric(difftime(Sys.time(),start, units='mins'))
-  SD.list[[k]] <- sdreport(Obj)
-}
-Results <- do.call(rbind, lapply(Report.list, function(x)
-  data.frame(x[c('intercept', 'beta_depth','SigmaE', 'Range', 'Sigma',
-                 'SigmaO', 'jnll', 'time')])))
-Results$knots <- knots[1:7]
-Results.long <- melt(Results, id.vars='knots')
-g <- ggplot(Results.long, aes(knots, (value), group=variable)) +
-  facet_wrap('variable', scales='free_y') + geom_line()
-g
-ggsave('plots/results_by_resolution.png', g, width=ggwidth, height=ggheight)
+## ## Test model is working
+## Inputs <- make.inputs(n_knots=20, model='ST', likelihood=1)
+## Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
+##                  random=Inputs$Random, map=Inputs$Map)
+## Obj$fn()
 
 ## Loop through each model, running and saving results.
+n_knots <- 500
 Opt.list <- Report.list <- SD.list <- list()
-for(m in c('M1', "M2", "M3")){
+for(m in c('NS', "S", "ST")){
   print(paste0('Starting model: ', m))
-  Inputs <- make.inputs(50, m)
+  Inputs <- make.inputs(n_knots=n_knots, model=m, likelihood=1)
   Obj <- MakeADFun( data=Inputs$Data, parameters=Inputs$Params, random=Inputs$Random,
                    map=Inputs$Map)
   trash <- Obj$env$beSilent()
@@ -82,6 +31,8 @@ for(m in c('M1', "M2", "M3")){
   Report.list[[m]]$time <- as.numeric(difftime(Sys.time(),start,
                                                units='mins'))
   SD.list[[m]] <- sdreport(Obj)
+  ##  make.model.plots(
+
 }
 saveRDS(Report.list, 'report_models.RDS')
 saveRDS(SD.list, 'sd_models.RDS')
@@ -167,3 +118,51 @@ ggsave(paste0('plots/annual/spatial_errors_',yr,'_M3.png'),g, width=7, height=4)
 ## pairs(df[, c('logcpue', 'hooksize', 'geartype', 'depth', 'month')])
 ## dev.off()
 
+## Obj$env$beSilent()
+## temp <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
+##                  control=list(trace=10, eval.max=1e4, iter.max=1e4))
+## report.temp <- Obj$report()
+## temp2 <- data.frame(resids=report.temp$resids, spacing=df$spacing)
+## plot(report.temp$spacing_std)
+## plot(report.temp$spacing)
+## hist(report.temp$spacing)
+## sd.temp <- sdreport(Obj)
+## value.spacing <- sd.temp$value[grep('spacing_std', x=names(sd.temp$value))]
+## sd.spacing <- sd.temp$sd[grep('spacing_std', x=names(sd.temp$value))]
+## df.spacing <- data.frame(ft=seq_along(value.spacing), value=value.spacing, sd=sd.spacing)[-1,]
+## ggplot(df.spacing, aes(ft, value, ymin=value-2*sd, ymax=value+2*sd)) + geom_errorbar()
+
+## plot(resids~spacing, data=temp2)
+
+## ## Increase spatial resolution and see what happens
+## knots <- c(100, 150, 200, 300, 500, 800, 1000)
+## Opt.list <- Report.list <- SD.list <- list()
+## m <- 'M3'
+## for(k in knots){
+##   print(paste0('Starting knots: ', k))
+##   Inputs <- make.inputs(k, m)
+##   Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
+##                    random=Inputs$Random, map=Inputs$Map)
+##   trash <- Obj$env$beSilent()
+##   start <- Sys.time()
+##   temp <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
+##                  control=list(trace=50, eval.max=1e4, iter.max=1e4))
+##   Opt.list[[k]] <- nlminb( start=temp$par, objective=Obj$fn, gradient=Obj$gr,
+##                      control=list(trace=50, eval.max=1e4, iter.max=1e4))
+##   Opt.list[[k]][["final_diagnostics"]] <-
+##     data.frame( "Name"=names(Obj$par),
+##                "final_gradient"=as.numeric(Obj$gr(Opt.list[[k]]$par)))
+##   Report.list[[k]] <- Obj$report()
+##   Report.list[[k]]$time <-
+##       as.numeric(difftime(Sys.time(),start, units='mins'))
+##   SD.list[[k]] <- sdreport(Obj)
+## }
+## Results <- do.call(rbind, lapply(Report.list, function(x)
+##   data.frame(x[c('intercept', 'beta_depth','SigmaE', 'Range', 'Sigma',
+##                  'SigmaO', 'jnll', 'time')])))
+## Results$knots <- knots[1:7]
+## Results.long <- melt(Results, id.vars='knots')
+## g <- ggplot(Results.long, aes(knots, (value), group=variable)) +
+##   facet_wrap('variable', scales='free_y') + geom_line()
+## g
+## ggsave('plots/results_by_resolution.png', g, width=ggwidth, height=ggheight)
