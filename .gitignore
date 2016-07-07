@@ -4,3 +4,4 @@ data.RDS
 ldLog.RData
 *.dll
 *.o
+hs_data.csv
