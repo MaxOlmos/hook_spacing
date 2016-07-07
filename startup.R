@@ -51,7 +51,7 @@ create.spde <- function(n_knots, make.plot=FALSE){
   return(list(mesh=mesh, spde=spde, cluster=knots$cluster))
 }
 
-make.inputs <- function(n_knots, model, likelihood=1, n_points_area=1e4, ...){
+make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, ...){
   spde <- create.spde(n_knots=n_knots)
   ## Calculate area of each SPDE grid by generating random points and
   ## seeing which proportion fall into each grid. This converges to area as
@@ -64,7 +64,7 @@ make.inputs <- function(n_knots, model, likelihood=1, n_points_area=1e4, ...){
   ## a_s <- table(factor(NN_extrapolation$nn.idx,levels=1:nrow(SimList$loc_xy))) / nrow(loc_extrapolation)
   ## Make inputs for all three models
   model <- match.arg(model, choices=c('NS', "S", "ST"))
-  Data <- list(likelihood=likelihood, cph_i=df$cph,
+  Data <- list(likelihood=likelihood, form=form, cph_i=df$cph,
                n_t=length(unique(df$year)),
                n_ft=max(df$spacing),
                s_i=spde$cluster-1,
@@ -81,14 +81,21 @@ make.inputs <- function(n_knots, model, likelihood=1, n_points_area=1e4, ...){
                  beta_geartype= c(.17, .3, .3),
                  beta_month=rep(0, length(levels(df$month))),
                  beta_hooksize=rep(0, length(levels(df$hooksize))),
-                 beta_depth=0, ln_tau_O=-.6, ln_tau_E=.25,
+                 beta_depth=0, beta_spacing=0, alpha_spacing=1,
+                 ln_tau_O=-.6, ln_tau_E=.25,
                  ln_kappa=.3,  ln_obs=-.2,
                  ln_spacing=0, spacing_devs=rep(0, length=Data$n_ft),
                  omega_s=rep(0,spde$mesh$n),
                  epsilon_st=matrix(0,nrow=nrow(Data$M0),ncol=Data$n_t))
-  Random <- list(NS=c('spacing_devs'),
-                 S=c('spacing_devs', 'omega_s'),
-                 ST=c("omega_s", "epsilon_st", "spacing_devs"))
+  if(form==1)
+    Random <- list(NS=c('spacing_devs'),
+                   S=c('spacing_devs', 'omega_s'),
+                   ST=c("omega_s", "epsilon_st", "spacing_devs"))
+  if(form==2) ## turn off spacing RE if using H&S formula
+    Random <- list(NS=NULL,
+                   S=c('omega_s'),
+                   ST=c("omega_s", "epsilon_st"))
+
   ## Need to fix first level of each factor at 0 so they are
   ## identifiable. Get merged into the intercept. I.e., contrasts in R.
   list.factors <- list(
@@ -96,19 +103,25 @@ make.inputs <- function(n_knots, model, likelihood=1, n_points_area=1e4, ...){
     beta_geartype=factor(c(NA, 1:(length(levels(df$geartype))-1))),
     beta_month=factor(c(NA, 1:(length(levels(df$month))-1))),
     beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))))
+  ## Turn off parameters for spacing depending on the form
+  if(form==1) {
+    xx <- list(beta_spacing=factor(NA), alpha_spacing=factor(NA))
+  } else {
+    xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
+               ln_spacing=factor(NA))
+  }
   Map <- list(
     ## Turn off spatial and spatio-temporal effects
-    NS=c(list.factors, list(
+    NS=c(list.factors, xx, list(
       ln_tau_O = factor(NA), ln_kappa=factor(NA), ln_tau_E=factor(NA),
       omega_s=factor(rep(NA, len=spde$mesh$n)),
       epsilon_st=factor(rep(NA, len=spde$mesh$n*Data$n_t)))),
     ## Turn off just spatiotemporal effects
-    S=c(list.factors, list(ln_tau_E=factor(NA),
+    S=c(list.factors, xx, list(ln_tau_E=factor(NA),
       omega_s=factor(rep(NA, len=spde$mesh$n)),
       epsilon_st=factor(rep(NA, len=spde$mesh$n*Data$n_t)))),
     ## Turn on everything
-    ST=list.factors)
-      ## beta_statarea=factor(rep(NA, len=length(levels(df$statarea)))))))
+    ST=c(xx,list.factors))
   return(list(Data=Data, Params=Params, Random=Random[[model]], Map=Map[[model]]))
 }
 

@@ -2,20 +2,31 @@
 ## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
 ## and full spatio-temporal (ST)
 Version <- "models/spatiotemporal_cpue_spacing"
+dyn.unload( dynlib(Version) )
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
-## ## Test model is working
-## Inputs <- make.inputs(n_knots=500, model='ST', likelihood=1)
-## Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
-##                  random=Inputs$Random, map=Inputs$Map)
-## Obj$fn()
-## Obj$env$beSilent()
-## temp <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
-##                control=list(trace=50, eval.max=1e4, iter.max=1e4))
+
+## Run ST model with and without the HS formula
+for(form in 1:2){
+  Inputs <- make.inputs(n_knots=50, model='ST', form=form, likelihood=1)
+  Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
+                   random=Inputs$Random, map=Inputs$Map)
+  Obj$env$beSilent()
+  Opt <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
+                control=list(trace=10, eval.max=1e4, iter.max=1e4))
+  report.temp <- Obj$report(); sd.temp <- sdreport(Obj)
+  value.spacing <- sd.temp$value[grep('spacing_std', x=names(sd.temp$value))][-1]
+  sd.spacing <- sd.temp$sd[grep('spacing_std', x=names(sd.temp$value))][-1]
+  uncertainty.df <- data.frame(spacing=seq_along(value.spacing), value=value.spacing, sd=sd.spacing)
+  logbook.re.results <- list(Obj=Obj, Opt=Opt, report=report.temp, sdreport=sd.temp,
+                             uncertainty.df=uncertainty.df)
+  if(form==1) saveRDS(logbook.re.results, file='results/logbook.re.results.RDS')
+  if(form==2) saveRDS(logbook.re.results, file='results/logbook.hs.results.RDS')
+}
 
 
 ## Loop through each model, running and saving results.
-n_knots <- 500
+n_knots <- 50
 Opt.list <- Report.list <- SD.list <- list()
 for(m in c('NS', "S", "ST")){
   print(paste0('Starting model: ', m))
@@ -59,19 +70,6 @@ saveRDS(SD.list, 'results/sd_models.RDS')
 ## pairs(df[, c('logcpue', 'hooksize', 'geartype', 'depth', 'month')])
 ## dev.off()
 
-## Obj$env$beSilent()
-## temp <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
-##                  control=list(trace=10, eval.max=1e4, iter.max=1e4))
-## report.temp <- Obj$report()
-## temp2 <- data.frame(resids=report.temp$resids, spacing=df$spacing)
-## plot(report.temp$spacing_std)
-## plot(report.temp$spacing)
-## hist(report.temp$spacing)
-## sd.temp <- sdreport(Obj)
-## value.spacing <- sd.temp$value[grep('spacing_std', x=names(sd.temp$value))]
-## sd.spacing <- sd.temp$sd[grep('spacing_std', x=names(sd.temp$value))]
-## df.spacing <- data.frame(ft=seq_along(value.spacing), value=value.spacing, sd=sd.spacing)[-1,]
-## ggplot(df.spacing, aes(ft, value, ymin=value-2*sd, ymax=value+2*sd)) + geom_errorbar()
 
 ## plot(resids~spacing, data=temp2)
 

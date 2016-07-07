@@ -25,6 +25,7 @@ Type objective_function<Type>::operator() ()
 {
   // Data inputs
   DATA_INTEGER(likelihood); // the likelihood function to use
+  DATA_INTEGER(form);	    // form of the hook spacing; 1=RE; 2=H&S
   DATA_FACTOR(s_i);  // Random effect index for observation i
   DATA_INTEGER(n_t); // number of years
   DATA_INTEGER(n_ft); // number of spacings.. 1:n_ft, with ft(0)=0 assumed
@@ -49,6 +50,8 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(beta_month);	   // month effect
   PARAMETER_VECTOR(beta_hooksize); // hooksize effect
   PARAMETER(beta_depth);	   // depth effect
+  PARAMETER(beta_spacing);	   // from H&S formula
+  PARAMETER(alpha_spacing);	   // from H&S formula
   // Variances
   PARAMETER(ln_tau_O);		  // spatial process
   PARAMETER(ln_tau_E);		  // spatio-temporal process
@@ -79,7 +82,9 @@ Type objective_function<Type>::operator() ()
   spacing(0)=0; // this is for ft=0
   for(int ft=1; ft<=n_ft; ft++){
     // Additive effect of hook spacing for a given foot
-    spacing(ft)=spacing(ft-1)+spacing_devs(ft-1);
+    if(form==1) spacing(ft)=spacing(ft-1)+spacing_devs(ft-1);
+    // Multiplicative form used by H&S
+    if(form==2) spacing(ft)=alpha_spacing*(1-exp(-beta_spacing*(ft)));
   }
   // Standardized effect of spacing
   vector<Type> spacing_std(n_ft+1);
@@ -89,11 +94,18 @@ Type objective_function<Type>::operator() ()
   // The model predictions for each observation
   vector<Type> mu_i(n_i);
   for( int i=0; i<n_i; i++){
+    if(form==1)
     mu_i(i) = intercept +
       spacing(spacing_i(i))+ beta_year(year_i(i)) +
       beta_month(month_i(i)) + beta_geartype(geartype_i(i)) +
       beta_hooksize(hooksize_i(i)) + beta_depth*depth_i(i) +
       omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i));
+    if(form==2)
+      mu_i(i) = spacing(spacing_i(i))*
+	(intercept + beta_year(year_i(i)) +
+	 beta_month(month_i(i)) + beta_geartype(geartype_i(i)) +
+	 beta_hooksize(hooksize_i(i)) + beta_depth*depth_i(i) +
+	 omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i)));
   }
 
   // Probability of random effects

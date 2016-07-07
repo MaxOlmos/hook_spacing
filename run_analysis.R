@@ -4,7 +4,7 @@
 ## Step 1: prepare workspace and load data
 source('startup.R')
 ## source('load_data.R')
-df <- readRDS(file='data.RDS')
+df <- readRDS(file='data/data.RDS')
 str(df)
 n_years <- length(unique(df$year))
 df$spacing <- round(df$spacing)
