@@ -8,7 +8,7 @@ dyn.load( dynlib(Version) )
 
 ## Run ST model with and without the HS formula
 for(form in 1:2){
-  Inputs <- make.inputs(n_knots=50, model='ST', form=form, likelihood=1)
+  Inputs <- make.inputs(n_knots=1000, model='ST', form=form, likelihood=1)
   Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                    random=Inputs$Random, map=Inputs$Map)
   Obj$env$beSilent()
@@ -25,35 +25,34 @@ for(form in 1:2){
 }
 
 
-## Loop through each model, running and saving results.
-n_knots <- 50
-Opt.list <- Report.list <- SD.list <- list()
-for(m in c('NS', "S", "ST")){
-  print(paste0('Starting model: ', m))
-  Inputs <- make.inputs(n_knots=n_knots, model=m, likelihood=1)
-  Obj <- MakeADFun( data=Inputs$Data, parameters=Inputs$Params, random=Inputs$Random,
-                   map=Inputs$Map)
-  trash <- Obj$env$beSilent()
-  start <- Sys.time()
-  temp <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
-                 control=list(trace=50, eval.max=1e4, iter.max=1e4))
-  Opt.list[[m]] <- nlminb( start=temp$par, objective=Obj$fn, gradient=Obj$gr,
-                     control=list(trace=50, eval.max=1e4, iter.max=1e4))
-  Opt.list[[m]][["final_diagnostics"]] <-
-    data.frame( "Name"=names(Obj$par), "final_gradient"=as.numeric(Obj$gr(Opt.list[[m]]$par)))
-  Report.list[[m]] <- test <- Obj$report()
-  Report.list[[m]]$time <- as.numeric(difftime(Sys.time(),start,
-                                               units='mins'))
-  SD.list[[m]] <- sdreport(Obj)
-  ##  make.model.plots(
-
-}
-saveRDS(Report.list, 'results/report_models.RDS')
-saveRDS(SD.list, 'results/sd_models.RDS')
-
-
-
+### ------------------------------------------------------------
 ### OLD CODE
+## ## Loop through each model, running and saving results.
+## n_knots <- 50
+## Opt.list <- Report.list <- SD.list <- list()
+## for(m in c('NS', "S", "ST")){
+##   print(paste0('Starting model: ', m))
+##   Inputs <- make.inputs(n_knots=n_knots, model=m, likelihood=1)
+##   Obj <- MakeADFun( data=Inputs$Data, parameters=Inputs$Params, random=Inputs$Random,
+##                    map=Inputs$Map)
+##   trash <- Obj$env$beSilent()
+##   start <- Sys.time()
+##   temp <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
+##                  control=list(trace=50, eval.max=1e4, iter.max=1e4))
+##   Opt.list[[m]] <- nlminb( start=temp$par, objective=Obj$fn, gradient=Obj$gr,
+##                      control=list(trace=50, eval.max=1e4, iter.max=1e4))
+##   Opt.list[[m]][["final_diagnostics"]] <-
+##     data.frame( "Name"=names(Obj$par), "final_gradient"=as.numeric(Obj$gr(Opt.list[[m]]$par)))
+##   Report.list[[m]] <- test <- Obj$report()
+##   Report.list[[m]]$time <- as.numeric(difftime(Sys.time(),start,
+##                                                units='mins'))
+##   SD.list[[m]] <- sdreport(Obj)
+##   ##  make.model.plots(
+
+## }
+## saveRDS(Report.list, 'results/report_models.RDS')
+## saveRDS(SD.list, 'results/sd_models.RDS')
+
 ###
 ## mapdata <- map_data("worldHires")
 ## mapdata <- mapdata[mapdata$region %in% c('USA', 'Canada'),]
