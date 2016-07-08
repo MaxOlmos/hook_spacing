@@ -21,6 +21,5 @@ source('run_hs.R')
 ## Step 4: Create plots, tables, and figures
 source('make_figures.R')
 
-
 ### End of analysis
 ### ------------------------------------------------------------

@@ -38,7 +38,7 @@ Type objective_function<Type>::operator() ()
   // DATA_FACTOR(statarea_i);
   // vectors of real data
   DATA_VECTOR(depth_i); // depth covariate
-  DATA_VECTOR(cph_i);  // counts for observation i (response variable)
+  DATA_VECTOR(cph_i);  // catch/hook (response variable); natural scale
   // SPDE objects from R-INLA
   DATA_SPARSE_MATRIX(M0);
   DATA_SPARSE_MATRIX(M1);
