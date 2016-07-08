@@ -1,8 +1,26 @@
 ## This file loads the data, makes plots, tables and figures.
 empirical.results <- readRDS('results/empirical.results.RDS')
+logbook.re.results <- readRDS('results/logbook.re.results.RDS')
+logbook.hs.results <- readRDS('results/logbook.hs.results.RDS')
 
-ggplot(empirical.results$uncertainty.df, aes(spacing, value, ymax=value+2*sd, ymin=value-2*sd)) +
-  geom_errorbar() + geom_line(lwd=2)
+uncertainty.df <- rbind.fill(data.frame(model='empirical', empirical.results$uncertainty.df),
+      data.frame(model='logbook.re', logbook.re.results$uncertainty.df),
+      data.frame(model='logbook.hs', logbook.hs.results$uncertainty.df))
+hs.original <- data.frame(spacing=1:max(uncertainty.df$spacing))
+hs.original$value=(1-exp(-.06*hs.original$spacing))/(1-exp(-.06*18))
+hs.original$sd <- 0
+g <- ggplot(uncertainty.df, aes(spacing, value, ymax=value+2*sd, ymin=value-2*sd)) +
+  geom_errorbar() + geom_line(lwd=2) + facet_wrap('model') +
+      geom_line(data=hs.original, aes(x=spacing, y=value), col='red') +
+      ylab('Effective Hook') + xlab("Hook Spacing (ft)") + xlim(0,50)
+ggsave('plots/effective_hook_comparisons.png', g, width=7, height=5)
+
+## QQ plots of residuals for the logbook models to see if they're fitting
+## well
+xx <- data.frame(model='logbook.re', qqnorm(logbook.re.results$report$resids, plot=FALSE))
+yy <- data.frame(model='logbook.hs', qqnorm(logbook.hs.results$report$resids, plot=FALSE))
+ggplot(rbind(xx,yy), aes(x,y)) +geom_point()+ facet_wrap('model') +
+    geom_abline(slope=1, intercept=0)
 
 
 ## Make some exploratory plots of the data
