@@ -18,10 +18,13 @@ for(form in 1:2){
   value.spacing <- sd.temp$value[grep('spacing_std', x=names(sd.temp$value))][-1]
   sd.spacing <- sd.temp$sd[grep('spacing_std', x=names(sd.temp$value))][-1]
   uncertainty.df <- data.frame(spacing=seq_along(value.spacing), value=value.spacing, sd=sd.spacing)
-  logbook.re.results <- list(Obj=Obj, Opt=Opt, report=report.temp, sdreport=sd.temp,
+  logbook.results <- list(Obj=Obj, Opt=Opt, report=report.temp,
                              uncertainty.df=uncertainty.df)
-  if(form==1) saveRDS(logbook.re.results, file='results/logbook.re.results.RDS')
-  if(form==2) saveRDS(logbook.re.results, file='results/logbook.hs.results.RDS')
+  if(form==1) saveRDS(logbook.results, file='results/logbook.results.RDS')
+  if(form==2) saveRDS(logbook.results, file='results/logbook.hs.results.RDS')
+  rm(sd.temp, report.temp, value.spacing, sd.spacing, uncertainty.df,
+     logbook.results)
+  gc(); gc()
 }
 
 
