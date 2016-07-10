@@ -7,7 +7,7 @@ compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
 ## Run ST model with and without the HS formula
 for(form in 1:2){
-  Inputs <- make.inputs(n_knots=500, model='S', form=form, likelihood=2)
+  Inputs <- make.inputs(n_knots=500, model='S', form=form, likelihood=1)
   Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                    random=Inputs$Random, map=Inputs$Map)
   Obj$env$beSilent()

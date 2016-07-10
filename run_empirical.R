@@ -46,3 +46,8 @@ temp <- sdreport(Obj)
 uncertainty.df <- data.frame(spacing=1:70, value=temp$value, sd=temp$sd)
 empirical.results <- list(Obj=Obj, Opt=Opt, sdreport=temp, uncertainty.df=uncertainty.df)
 saveRDS(empirical.results, file='results/empirical.results.RDS')
+
+## Clean up
+dyn.unload(dynlib(Version))
+rm(Obj, Opt, temp, uncertainty.df, empirical.results, Inputs, lower, upper,
+   Version, Params)
