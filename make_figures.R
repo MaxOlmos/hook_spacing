@@ -3,6 +3,7 @@ empirical.results <- readRDS('results/empirical.results.RDS')
 logbook.re.results <- readRDS('results/logbook.re.results.RDS')
 logbook.hs.results <- readRDS('results/logbook.hs.results.RDS')
 
+## Plot effect hook comparisons for the three models
 uncertainty.df <- rbind.fill(data.frame(model='empirical', empirical.results$uncertainty.df),
       data.frame(model='logbook.re', logbook.re.results$uncertainty.df),
       data.frame(model='logbook.hs', logbook.hs.results$uncertainty.df))
@@ -22,15 +23,20 @@ yy <- data.frame(model='logbook.hs', qqnorm(logbook.hs.results$report$resids, pl
 ggplot(rbind(xx,yy), aes(x,y)) +geom_point()+ facet_wrap('model') +
     geom_abline(slope=1, intercept=0)
 
-
-## Make some exploratory plots of the data
+## Make some exploratory plots of the logbook data
 g <- ggplot(df, aes(year, cph)) + geom_violin()
 ggsave('plots/raw_cph.png', g, width=ggwidth, height=ggheight)
-g <- ggplot(df, aes(year, logcpue)) + geom_violin()
+g <- ggplot(df, aes(year, log(cph))) + geom_violin()
 ggsave('plots/raw_logcpue.png', g, width=ggwidth, height=ggheight)
 g <- ggplot(df, aes(spacing)) + geom_bar() + facet_wrap('geartype')
 ggsave('plots/spacings.png', g, width=ggwidth, height=ggheight)
+df.geartype <- ddply(df, .(year, geartype), summarize,
+                     count=length(geartype))
+df.geartype <- ddply(df.geartype, .(year), mutate, pct=count/sum(count))
+g <- ggplot(df.geartype, aes(year,pct, fill=geartype)) + geom_bar(stat='identity')
+ggsave('plots/geartype_trends.png', g, width=ggwidth, height=ggheight)
 
+## Exploratory plots of the emprical data
 g <- ggplot()+
     geom_line(data=hs, aes(x=spacing, y=catch.per.hook, group=daynumber,
               colour=daynumber), size=.5)  + xlim(0, 45)+ xlab("spacing (ft)")+
