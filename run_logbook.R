@@ -2,12 +2,11 @@
 ## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
 ## and full spatio-temporal (ST)
 Version <- "models/spatiotemporal_cpue_spacing"
-## dyn.unload( dynlib(Version) )
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
 ## Run ST model with and without the HS formula
 for(form in 1:2){
-  Inputs <- make.inputs(n_knots=500, model='S', form=form, likelihood=1)
+  Inputs <- make.inputs(n_knots=50, model='S', form=form, likelihood=1)
   Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                    random=Inputs$Random, map=Inputs$Map)
   Obj$env$beSilent()
@@ -25,6 +24,7 @@ for(form in 1:2){
      logbook.results)
   gc(); gc()
 }
+dyn.unload( dynlib(Version) )
 
 
 ### ------------------------------------------------------------
