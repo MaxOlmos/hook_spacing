@@ -15,7 +15,7 @@ source('run_logbook.R')
 
 ### ------------------------------------------------------------
 ## Step 3: Run the Hamley & Skud model
-source('run_hs.R')
+source('run_empirical.R')
 
 ### ------------------------------------------------------------
 ## Step 4: Create plots, tables, and figures

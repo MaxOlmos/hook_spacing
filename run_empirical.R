@@ -16,12 +16,12 @@ hs$group <- as.numeric(hs$group)
 
 data.hs <-
     list(log_yobs=log(hs$catch.per.hook+.1), group=hs$group-1,
-         Nobs=nrow(hs), Ngroup=length(unique(group)), day=hs$daynumber,
+         Nobs=nrow(hs), Ngroup=length(unique(hs$group)), day=hs$daynumber,
          spacing=hs$spacing)
 Params <-
     list(logcpue_mean=0, logcpue_sd=1, sigma_obs_mean=-.5, sigma_obs_sd=.5,
-         gamma=0, beta=.1,logcpue=rep(0, len=Ngroup), logsigma_obs=rep(0,
-                                                        len=Ngroup))
+         gamma=0, beta=.1,logcpue=rep(0, len=data.hs$Ngroup), logsigma_obs=rep(0,
+                                                        len=data.hs$Ngroup))
 Version <- "models/empirical_spacing"
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
