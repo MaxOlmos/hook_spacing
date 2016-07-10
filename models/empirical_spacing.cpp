@@ -50,6 +50,7 @@ Type objective_function<Type>::operator() ()
     cpue(i)=exp(logcpue(i));
     sigma_obs(i)=exp(logsigma_obs(i));
   }
+  Type max_ehook = 1/(1-exp(-18*beta));
 
   // The model predictions for each observation
   vector<Type> ypred_i(Nobs);
@@ -69,14 +70,17 @@ Type objective_function<Type>::operator() ()
 
   // Reporting
   vector<Type> spacing_pred(70);
-  vector<Type> spacing_std(70);
+  vector<Type> ehook(70);
   for(int i=0; i<70; i++){
     // predict spacing effect for day=0 and mean group level
     spacing_pred(i)= exp(logcpue_mean)*exp(-0)*(1-exp(-beta*(i+1)));
   }
   for(int i=0; i<70; i++){
-    spacing_std(i)= spacing_pred(i)/spacing_pred(17);
+    ehook(i)= max_ehook*(1-exp(-beta*(i+1)));
   }
-  ADREPORT(spacing_std);
+  ADREPORT(ehook);
+  ADREPORT(beta);
+  ADREPORT(gamma);
+  ADREPORT(max_ehook);
   return jnll;
 }

@@ -35,7 +35,6 @@ names(upper) <- names(lower) <- names(unlist(Params))
 lower['gamma'] <- 0; upper['gamma'] <- 1
 lower['logcpue_sd'] <- 0; upper['logcpue_sd'] <- Inf
 lower['sigma_obs_sd'] <- 0; upper['sigma_obs_sd'] <- Inf
-
 Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                  random=Inputs$Random, map=Inputs$Map)
 Obj$env$beSilent()
@@ -43,8 +42,11 @@ Opt <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
                control=list(trace=10, eval.max=1e4, iter.max=1e4),
                             lower=lower, upper=upper)
 temp <- sdreport(Obj)
-uncertainty.df <- data.frame(spacing=1:70, value=temp$value, sd=temp$sd)
-empirical.results <- list(Obj=Obj, Opt=Opt, sdreport=temp, uncertainty.df=uncertainty.df)
+xx <- data.frame(par=names(temp$value), value=temp$value, sd=temp$sd)
+uncertainty.df <- data.frame(spacing=1:70, value=xx$value[1:70], sd=xx$sd[1:70])
+sd.df <- xx[-(1:70),]
+empirical.results <- list(Obj=Obj, Opt=Opt, sdreport=temp,
+                          uncertainty.df=uncertainty.df, sd.df=sd.df)
 saveRDS(empirical.results, file='results/empirical.results.RDS')
 
 ## Clean up
