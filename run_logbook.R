@@ -1,6 +1,14 @@
 ### ------------------------------------------------------------
+## Step 1: read in and prep the data for this model
+df <- readRDS(file='data/data.RDS')
+str(df)
+n_years <- length(unique(df$year))
+df$spacing <- round(df$spacing)
+
+### ------------------------------------------------------------
 ## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
-## and full spatio-temporal (ST)
+## and full spatio-temporal (ST). Form=1 implies a random walk on hook
+## spacing, form=2 is the HS model.
 Version <- "models/spatiotemporal_cpue_spacing"
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
