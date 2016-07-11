@@ -23,3 +23,13 @@ source('make_figures.R')
 
 ### End of analysis
 ### ------------------------------------------------------------
+
+
+## development code
+x <- seq(.001, 70, len=1000)
+ff <- function(x, beta, lambda) (1-exp(-beta*x)^lambda)/(1-exp(-beta*18)^lambda)
+g <- function(x,beta,lambda){
+  lines(x, ff(x, beta, lambda), type='l')
+}
+plot(18,1, ylim=c(0,2), xlim=range(x))
+g(x,.05,10.1)
