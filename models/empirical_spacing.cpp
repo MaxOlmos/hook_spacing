@@ -33,6 +33,8 @@ Type objective_function<Type>::operator() ()
   PARAMETER(sigma_obs_sd);	   // sd of obs errors, log scale
   PARAMETER(gamma);		   // Impact of day, bounded (0,1)
   PARAMETER(beta);		   // non-linear effect of spacing
+  PARAMETER(lambda);		   // exponent that controls non-linearity
+
   // Random effects
   PARAMETER_VECTOR(logcpue);	  // site level random effects for logcpue
   PARAMETER_VECTOR(logsigma_obs); // observation error at each site
@@ -50,12 +52,13 @@ Type objective_function<Type>::operator() ()
     cpue(i)=exp(logcpue(i));
     sigma_obs(i)=exp(logsigma_obs(i));
   }
-  Type max_ehook = 1/(1-exp(-18*beta));
+  // alpha tilde in paper
+  Type max_ehook = 1/(1-pow(exp(-18*beta), lambda));
 
   // The model predictions for each observation
   vector<Type> ypred_i(Nobs);
   for( int i=0; i<Nobs; i++){
-    ypred_i(i) = cpue(group(i))*exp(-day(i)*gamma)*(1-exp(-beta*spacing(i)));
+    ypred_i(i) = cpue(group(i))*exp(-day(i)*gamma)*(1-pow(exp(-beta*spacing(i)),lambda));
   }
 
   // Probability of random effects on group
@@ -73,7 +76,7 @@ Type objective_function<Type>::operator() ()
   vector<Type> ehook(70);
   for(int i=0; i<70; i++){
     // predict spacing effect for day=0 and mean group level
-    spacing_pred(i)= exp(logcpue_mean)*exp(-0)*(1-exp(-beta*(i+1)));
+    spacing_pred(i)= exp(logcpue_mean)*(1-pow(exp(-beta*(i+1)),lambda));
   }
   for(int i=0; i<70; i++){
     ehook(i)= max_ehook*(1-exp(-beta*(i+1)));
@@ -81,6 +84,7 @@ Type objective_function<Type>::operator() ()
   ADREPORT(ehook);
   ADREPORT(beta);
   ADREPORT(gamma);
+  ADREPORT(lambda);
   ADREPORT(max_ehook);
   return jnll;
 }

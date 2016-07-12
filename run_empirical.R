@@ -20,19 +20,20 @@ data.hs <-
          spacing=hs$spacing)
 Params <-
     list(logcpue_mean=0, logcpue_sd=1, sigma_obs_mean=-.5, sigma_obs_sd=.5,
-         gamma=0, beta=.1,logcpue=rep(0, len=data.hs$Ngroup), logsigma_obs=rep(0,
+         gamma=0, beta=.1, lambda=1, logcpue=rep(0, len=data.hs$Ngroup), logsigma_obs=rep(0,
                                                         len=data.hs$Ngroup))
 Version <- "models/empirical_spacing"
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
 ## Test model is working
 Inputs <- list(Data=data.hs, Params=Params,
-               random=NULL,#c('logsigma_obs', 'logcpue'),
+               random=c('logsigma_obs', 'logcpue'),
                map=NULL)
 lower <- rep(-Inf, len=length(unlist(Params)))
 upper <- rep(Inf,  len=length(unlist(Params)))
 names(upper) <- names(lower) <- names(unlist(Params))
 lower['gamma'] <- 0; upper['gamma'] <- 1
+lower['lambda'] <- 0; upper['lambda'] <- 5
 lower['logcpue_sd'] <- 0; upper['logcpue_sd'] <- Inf
 lower['sigma_obs_sd'] <- 0; upper['sigma_obs_sd'] <- Inf
 Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
