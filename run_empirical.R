@@ -25,10 +25,7 @@ Params <-
 Version <- "models/empirical_spacing"
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
-## Test model is working
-Inputs <- list(Data=data.hs, Params=Params,
-               random=c('logsigma_obs', 'logcpue'),
-               map=NULL)
+## Set bounds for parameters via limits in optimizer
 lower <- rep(-Inf, len=length(unlist(Params)))
 upper <- rep(Inf,  len=length(unlist(Params)))
 names(upper) <- names(lower) <- names(unlist(Params))
@@ -36,8 +33,8 @@ lower['gamma'] <- 0; upper['gamma'] <- 1
 lower['lambda'] <- 0; upper['lambda'] <- 5
 lower['logcpue_sd'] <- 0; upper['logcpue_sd'] <- Inf
 lower['sigma_obs_sd'] <- 0; upper['sigma_obs_sd'] <- Inf
-Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
-                 random=Inputs$Random, map=Inputs$Map)
+Obj <- MakeADFun(data=data.hs, parameters=Params,
+                 random=c('logsigma_obs', 'logcpue'), map=NULL)
 Obj$env$beSilent()
 Opt <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
                control=list(trace=10, eval.max=1e4, iter.max=1e4),
@@ -52,5 +49,5 @@ saveRDS(empirical.results, file='results/empirical.results.RDS')
 
 ## Clean up
 dyn.unload(dynlib(Version))
-rm(Obj, Opt, temp, uncertainty.df, empirical.results, Inputs, lower, upper,
+rm(Obj, Opt, temp, uncertainty.df, empirical.results, lower, upper,
    Version, Params)
