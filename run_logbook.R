@@ -16,7 +16,8 @@ compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
 ## Run ST model with and without the HS formula
 for(form in 1:2){
-    Inputs <- make.inputs(n_knots=50, model='S', form=form, likelihood=1)
+  form <- 1
+    Inputs <- make.inputs(n_knots=50, model='NS', form=form, likelihood=1)
     Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                      random=Inputs$Random, map=Inputs$Map)
     Obj$env$beSilent()
@@ -28,7 +29,9 @@ for(form in 1:2){
     value.spacing <- sd.temp$value[grep('spacing_std', x=names(sd.temp$value))][-1]
     sd.spacing <- sd.temp$sd[grep('spacing_std', x=names(sd.temp$value))][-1]
     uncertainty.df <- data.frame(spacing=seq_along(value.spacing), value=value.spacing, sd=sd.spacing)
-    logbook.results <- list(Obj=Obj, Opt=Opt, report=report.temp,
+  ggplot(uncertainty.df, aes(spacing, value, ymax=value+2*sd,
+                             ymin=value-2*sd)) + geom_errorbar()
+  logbook.results <- list(Obj=Obj, Opt=Opt, report=report.temp,
                             uncertainty.df=uncertainty.df)
     if(form==1) saveRDS(logbook.results, file='results/logbook.results.RDS')
     if(form==2) saveRDS(logbook.results, file='results/logbook.hs.results.RDS')

@@ -100,15 +100,22 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
   ## identifiable. Get merged into the intercept. I.e., contrasts in R.
   list.factors <- list(
     beta_year=factor(c(NA, 1:(length(levels(df$year))-1))),
-    beta_geartype=factor(c(NA, 1:(length(levels(df$geartype))-1))),
-    beta_month=factor(c(NA, 1:(length(levels(df$month))-1))),
-    beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))))
+    ## beta_geartype=factor(c(NA, 1:(length(levels(df$geartype))-1))),
+    ## beta_month=factor(c(NA, 1:(length(levels(df$month))-1))),
+    ## beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))))
+  ## OR turn them totally off
+  ## list.factors <- list(
+  ##   beta_year=factor(rep(NA, length(levels(df$year)))),
+    beta_geartype=factor(rep(NA, length(levels(df$geartype)))),
+    beta_month=factor(rep(NA, length(levels(df$month)))),
+    beta_hooksize=factor(rep(NA, length(levels(df$hooksize)))))
+
   ## Turn off parameters for spacing depending on the form
   if(form==1) {
-      ## random walk on spacing
+    ## random walk on spacing
     xx <- list(beta_spacing=factor(NA))
   } else {
-      ## H&S form on spacing
+    ## H&S form on spacing
     xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
                ln_spacing=factor(NA))
   }
