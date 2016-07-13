@@ -10,30 +10,35 @@ df$spacing <- round(df$spacing)
 ## and full spatio-temporal (ST). Form=1 implies a random walk on hook
 ## spacing, form=2 is the HS model.
 Version <- "models/spatiotemporal_cpue_spacing"
+## dyn.unload( dynlib(Version))
+## file.remove('models/spatiotemporal_cpue_spacing.o', 'models/spatiotemporal_cpue_spacing.dll')
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
 ## Run ST model with and without the HS formula
 for(form in 1:2){
-  Inputs <- make.inputs(n_knots=50, model='S', form=form, likelihood=1)
-  Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
-                   random=Inputs$Random, map=Inputs$Map)
-  Obj$env$beSilent()
-  Opt <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
-                control=list(trace=10, eval.max=1e4, iter.max=1e4))
-  report.temp <- Obj$report(); sd.temp <- sdreport(Obj)
-  value.spacing <- sd.temp$value[grep('spacing_std', x=names(sd.temp$value))][-1]
-  sd.spacing <- sd.temp$sd[grep('spacing_std', x=names(sd.temp$value))][-1]
-  uncertainty.df <- data.frame(spacing=seq_along(value.spacing), value=value.spacing, sd=sd.spacing)
-  logbook.results <- list(Obj=Obj, Opt=Opt, report=report.temp,
-                             uncertainty.df=uncertainty.df)
-  if(form==1) saveRDS(logbook.results, file='results/logbook.results.RDS')
-  if(form==2) saveRDS(logbook.results, file='results/logbook.hs.results.RDS')
-  rm(sd.temp, report.temp, value.spacing, sd.spacing, uncertainty.df,
-     logbook.results)
-  gc(); gc()
+    Inputs <- make.inputs(n_knots=50, model='S', form=form, likelihood=1)
+    Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
+                     random=Inputs$Random, map=Inputs$Map)
+    Obj$env$beSilent()
+    Opt <- nlminb(start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
+                  control=list(trace=10))
+    report.temp <- Obj$report();
+    sd.temp <- sdreport(Obj)
+    data.frame(par=names(sd.temp$value), value=sd.temp$value, sd=sd.temp$sd)
+    value.spacing <- sd.temp$value[grep('spacing_std', x=names(sd.temp$value))][-1]
+    sd.spacing <- sd.temp$sd[grep('spacing_std', x=names(sd.temp$value))][-1]
+    uncertainty.df <- data.frame(spacing=seq_along(value.spacing), value=value.spacing, sd=sd.spacing)
+    logbook.results <- list(Obj=Obj, Opt=Opt, report=report.temp,
+                            uncertainty.df=uncertainty.df)
+    if(form==1) saveRDS(logbook.results, file='results/logbook.results.RDS')
+    if(form==2) saveRDS(logbook.results, file='results/logbook.hs.results.RDS')
+    rm(sd.temp, report.temp, value.spacing, sd.spacing, uncertainty.df,
+       logbook.results)
+    gc(); gc()
 }
-dyn.unload( dynlib(Version) )
 
+## Cleanup
+dyn.unload( dynlib(Version))
 
 ### ------------------------------------------------------------
 ### OLD CODE

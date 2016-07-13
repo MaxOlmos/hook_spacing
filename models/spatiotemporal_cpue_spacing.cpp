@@ -51,7 +51,7 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(beta_hooksize); // hooksize effect
   PARAMETER(beta_depth);	   // depth effect
   PARAMETER(beta_spacing);	   // from H&S formula
-  PARAMETER(alpha_spacing);	   // from H&S formula
+  //PARAMETER(alpha_spacing);	   // from H&S formula
   // Variances
   PARAMETER(ln_tau_O);		  // spatial process
   PARAMETER(ln_tau_E);		  // spatio-temporal process
@@ -78,18 +78,22 @@ Type objective_function<Type>::operator() ()
   Eigen::SparseMatrix<Type>
     Q = exp(4*ln_kappa)*M0 + Type(2.0)*exp(2*ln_kappa)*M1 + M2;
   // Calculate the spacing effects by foot (random effects)
-  vector<Type> spacing(n_ft+1); // n+1 since ft=0 is included
-  spacing(0)=0; // this is for ft=0
-  for(int ft=1; ft<=n_ft; ft++){
+  vector<Type> spacing(n_ft);
+  // ft here is offset by -1 so ft=0 => spacing of 1ft
+  for(int ft=0; ft<n_ft; ft++){
     // Additive effect of hook spacing for a given foot
-    if(form==1) spacing(ft)=spacing(ft-1)+spacing_devs(ft-1);
-    // Multiplicative form used by H&S
-    if(form==2) spacing(ft)=alpha_spacing*(1-exp(-beta_spacing*(ft)));
+    if(form==1) {
+      if(ft==0) spacing(ft)=spacing_devs(ft); // initialize at first dev
+      else spacing(ft)=spacing(ft-1)+spacing_devs(ft);
+    }
+    // Multiplicative form used by H&S.
+    if(form==2) spacing(ft)=(1-exp(-beta_spacing*(ft+1)));
   }
   // Standardized effect of spacing
-  vector<Type> spacing_std(n_ft+1);
-  for(int ft=0; ft<=n_ft; ft++)
-    spacing_std(ft)=spacing(ft)/spacing(18);
+  vector<Type> spacing_std(n_ft);
+  for(int ft=0; ft<n_ft; ft++)
+    // ft is again offset by 1 here, so ft=0 =>  spacing of 1ft
+    spacing_std(ft)=spacing(ft)/spacing(17);
 
   // The model predictions for each observation
   vector<Type> mu_i(n_i);
@@ -123,9 +127,9 @@ Type objective_function<Type>::operator() ()
     // Probability of data conditional on random effects (likelihood)
     if(likelihood==1) // lognormal case
       jnll_comp(0) -= dlognorm(cph_i(i), mu_i(i), exp(ln_obs), true );
-    else if(likelihood==2) // gamma case
-      jnll_comp(0) -= dgamma(cph_i(i), mu_i(i), exp(ln_obs), true );
-    else error("bad likelihood input");
+    // else if(likelihood==2) // gamma case
+    //   jnll_comp(0) -= dgamma(cph_i(i), mu_i(i), exp(ln_obs), true );
+    //   else error("bad likelihood input");
   }
 
   // Predict relative average catch rate over time
@@ -143,10 +147,10 @@ Type objective_function<Type>::operator() ()
   REPORT(beta_depth);
   REPORT(spacing_std);
   REPORT(spacing);
-  ADREPORT(Range);
-  ADREPORT(SigmaE);
-  ADREPORT(SigmaO);
-  ADREPORT(Sigma);
+  // ADREPORT(Range);
+  // ADREPORT(SigmaE);
+  // ADREPORT(SigmaO);
+  // ADREPORT(Sigma);
   //  ADREPORT(cph_t);
   ADREPORT(spacing_std);
   REPORT(resids);

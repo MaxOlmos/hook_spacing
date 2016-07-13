@@ -66,7 +66,7 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
   model <- match.arg(model, choices=c('NS', "S", "ST"))
   Data <- list(likelihood=likelihood, form=form, cph_i=df$cph,
                n_t=length(unique(df$year)),
-               n_ft=max(df$spacing),
+               n_ft=max(df$spacing)+5,
                s_i=spde$cluster-1,
                spacing_i=df$spacing,
                year_i=as.numeric(df$year)-1,
@@ -76,15 +76,15 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
                depth_i=df$depth,
                M0=spde$spde$param.inla$M0, M1=spde$spde$param.inla$M1,
                M2=spde$spde$param.inla$M2)
-  Params <- list(intercept=5,
+  Params <- list(intercept=2,
                  beta_year=rep(0, length(levels(df$year))),
                  beta_geartype= c(.17, .3, .3),
                  beta_month=rep(0, length(levels(df$month))),
                  beta_hooksize=rep(0, length(levels(df$hooksize))),
-                 beta_depth=0, beta_spacing=0, alpha_spacing=1,
+                 beta_depth=0, beta_spacing=0,
                  ln_tau_O=-.6, ln_tau_E=.25,
-                 ln_kappa=.3,  ln_obs=-.2,
-                 ln_spacing=0, spacing_devs=rep(0, length=Data$n_ft),
+                 ln_kappa=.3,  ln_obs=-.2, ln_spacing=0,
+                 spacing_devs=rep(0, length=Data$n_ft),
                  omega_s=rep(0,spde$mesh$n),
                  epsilon_st=matrix(0,nrow=nrow(Data$M0),ncol=Data$n_t))
   if(form==1)
@@ -105,8 +105,10 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
     beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))))
   ## Turn off parameters for spacing depending on the form
   if(form==1) {
-    xx <- list(beta_spacing=factor(NA), alpha_spacing=factor(NA))
+      ## random walk on spacing
+    xx <- list(beta_spacing=factor(NA))
   } else {
+      ## H&S form on spacing
     xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
                ln_spacing=factor(NA))
   }
@@ -118,7 +120,6 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
       epsilon_st=factor(rep(NA, len=spde$mesh$n*Data$n_t)))),
     ## Turn off just spatiotemporal effects
     S=c(list.factors, xx, list(ln_tau_E=factor(NA),
-      omega_s=factor(rep(NA, len=spde$mesh$n)),
       epsilon_st=factor(rep(NA, len=spde$mesh$n*Data$n_t)))),
     ## Turn on everything
     ST=c(xx,list.factors))
