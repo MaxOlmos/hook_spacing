@@ -16,13 +16,13 @@ compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
 ## Run ST model with and without the HS formula
 for(form in 1:2){
-  form <- 1
+  form <- 2
     Inputs <- make.inputs(n_knots=50, model='NS', form=form, likelihood=1)
     Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                      random=Inputs$Random, map=Inputs$Map)
     Obj$env$beSilent()
     Opt <- nlminb(start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
-                  control=list(trace=10))
+                  control=list(trace=10, eval.max=1e4, iter.max=1e4 ))
     report.temp <- Obj$report();
     sd.temp <- sdreport(Obj)
     data.frame(par=names(sd.temp$value), value=sd.temp$value, sd=sd.temp$sd)

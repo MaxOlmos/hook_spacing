@@ -76,7 +76,7 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
                depth_i=df$depth,
                M0=spde$spde$param.inla$M0, M1=spde$spde$param.inla$M1,
                M2=spde$spde$param.inla$M2)
-  Params <- list(intercept=2,
+  Params <- list(intercept=5,
                  beta_year=rep(0, length(levels(df$year))),
                  beta_geartype= c(.17, .3, .3),
                  beta_month=rep(0, length(levels(df$month))),
