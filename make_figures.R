@@ -1,4 +1,22 @@
 ## This file loads the data, makes plots, tables and figures.
+
+## The effect of resolution on the ST model
+knots <- c(50, 100, 150, 200, 300, 400, 500, 600, 700, 800)
+temp.list <- list(); k <- 1
+for(n_knots in knots){
+    x <- paste0('results/logbook.hs.', n_knots,'.RDS')
+    if(file.exists(x)){
+        y <- readRDS(x)
+        temp <- with(y,
+                     data.frame(n_knots=n_knots, model=model, form=form, nll=report$nll_likelihood,
+                                intercept=report$intercept, runtime=runtime))
+        temp.list[[k]] <- cbind(temp, y$sd.par[1:5,]); k <- k+1
+    }
+}
+res <- do.call(rbind, temp.list)
+ggplot(res, aes(n_knots, value, ymin=value-2*sd, ymax=value+2*sd)) +
+    geom_line() + geom_errorbar() + facet_wrap('par', scales='free')
+
 empirical.results <- readRDS('results/empirical.results.RDS')
 logbook.re.results <- readRDS('results/logbook.re.results.RDS')
 logbook.hs.results <- readRDS('results/logbook.hs.results.RDS')
