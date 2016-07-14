@@ -10,14 +10,16 @@ df$spacing <- round(df$spacing)
 ## and full spatio-temporal (ST). Form=1 implies a random walk on hook
 ## spacing, form=2 is the HS model.
 Version <- "models/spatiotemporal_cpue_spacing"
-## dyn.unload( dynlib(Version))
-## file.remove('models/spatiotemporal_cpue_spacing.o', 'models/spatiotemporal_cpue_spacing.dll')
+dyn.unload( dynlib(Version))
+file.remove('models/spatiotemporal_cpue_spacing.o', 'models/spatiotemporal_cpue_spacing.dll')
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
+
+
+
 ## Run ST model with and without the HS formula
 for(form in 1:2){
-  form <- 2
-    Inputs <- make.inputs(n_knots=50, model='NS', form=form, likelihood=1)
+    Inputs <- make.inputs(n_knots=50, model='ST', form=form, likelihood=1)
     Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                      random=Inputs$Random, map=Inputs$Map)
     Obj$env$beSilent()
@@ -29,11 +31,11 @@ for(form in 1:2){
     value.spacing <- sd.temp$value[grep('spacing_std', x=names(sd.temp$value))][-1]
     sd.spacing <- sd.temp$sd[grep('spacing_std', x=names(sd.temp$value))][-1]
     uncertainty.df <- data.frame(spacing=seq_along(value.spacing), value=value.spacing, sd=sd.spacing)
-  ggplot(uncertainty.df, aes(spacing, value, ymax=value+2*sd,
-                             ymin=value-2*sd)) + geom_errorbar()
-  logbook.results <- list(Obj=Obj, Opt=Opt, report=report.temp,
+    ## ggplot(uncertainty.df, aes(spacing, value, ymax=value+2*sd,
+    ##                          ymin=value-2*sd)) + geom_errorbar()
+    logbook.results <- list(Obj=Obj, Opt=Opt, report=report.temp,
                             uncertainty.df=uncertainty.df)
-    if(form==1) saveRDS(logbook.results, file='results/logbook.results.RDS')
+    if(form==1) saveRDS(logbook.results, file='results/logbook.re.results.RDS')
     if(form==2) saveRDS(logbook.results, file='results/logbook.hs.results.RDS')
     rm(sd.temp, report.temp, value.spacing, sd.spacing, uncertainty.df,
        logbook.results)
@@ -45,6 +47,26 @@ dyn.unload( dynlib(Version))
 
 ### ------------------------------------------------------------
 ### OLD CODE
+
+## ## Test code. Track parameter traces for plotting
+## Inputs <- make.inputs(n_knots=50, model='S', form=1, likelihood=1)
+## Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
+##                  random=Inputs$Random, map=Inputs$Map)
+## Obj$env$beSilent()
+## Opt <<- nlminb(start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
+##               control=list(trace=0, eval.max=1e4, iter.max=1 ))
+
+## xx <- ldply(1:200, function(i){
+##               print(i)
+## Opt <<- nlminb(start=Opt$par, objective=Obj$fn, gradient=Obj$gr,
+##               control=list(trace=0, eval.max=1e4, iter.max=5 ))
+## report.temp <- Obj$report();
+## return(c(iteration=i, unlist(report.temp[c(2,6,7,8)]), Opt$par))
+## })
+## xx.long <- melt(xx, 'iteration')
+## ggplot(xx.long, aes(iteration, value)) + geom_line() +
+##   facet_wrap('variable', scales='free_y')
+
 ## ## Loop through each model, running and saving results.
 ## n_knots <- 50
 ## Opt.list <- Report.list <- SD.list <- list()

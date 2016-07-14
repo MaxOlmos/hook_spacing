@@ -141,7 +141,7 @@ Type objective_function<Type>::operator() ()
 
   // Reporting
   Type jnll = nll_likelihood+nll_omega+nll_epsilon+nll_spacing;
-  vector<Type> resids = mu_i-cph_i;
+  vector<Type> resids = mu_i-log(cph_i);
   // REPORT(jnll_comp);
   REPORT(nll_likelihood);
   REPORT(nll_omega);
