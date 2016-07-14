@@ -64,7 +64,11 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
   ## a_s <- table(factor(NN_extrapolation$nn.idx,levels=1:nrow(SimList$loc_xy))) / nrow(loc_extrapolation)
   ## Make inputs for all three models
   model <- match.arg(model, choices=c('NS', "S", "ST"))
-  Data <- list(likelihood=likelihood, form=form, cph_i=df$cph,
+  if(model=='NS') space <- 0
+  if(model=='S') space <- 1
+  if(model=='ST') space <- 2
+  Data <- list(likelihood=likelihood, form=form, space=space,
+               cph_i=df$cph,
                n_t=length(unique(df$year)),
                n_ft=max(df$spacing)+5,
                s_i=spde$cluster-1,

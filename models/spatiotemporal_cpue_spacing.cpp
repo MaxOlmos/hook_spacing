@@ -26,6 +26,7 @@ Type objective_function<Type>::operator() ()
   // Data inputs
   DATA_INTEGER(likelihood); // the likelihood function to use
   DATA_INTEGER(form);	    // form of the hook spacing; 1=RE; 2=H&S
+  DATA_INTEGER(space);	    // form of the spatial component; 0=NS, 1=S; 2=ST
   DATA_FACTOR(s_i);  // Random effect index for observation i
   DATA_INTEGER(n_t); // number of years
   DATA_INTEGER(n_ft); // number of spacings.. 1:n_ft, with ft(0)=0 assumed
@@ -115,11 +116,13 @@ Type objective_function<Type>::operator() ()
   }
 
   // Probability of random effects
-  nll_omega += // space
-    SCALE( GMRF(Q), 1/exp(ln_tau_O) )( omega_s );
+  if(space>0) nll_omega += SCALE( GMRF(Q), 1/exp(ln_tau_O) )( omega_s );
+  if(space>1) {
   for( int t=0; t<n_t; t++)	// spatio-temporal
     nll_epsilon += SCALE( GMRF(Q), 1/exp(ln_tau_E) )( epsilon_st.col(t) );
-    // hook spacing effects
+  }
+
+  // hook spacing effects
   for(int ft=0; ft<n_ft; ft++)
     nll_spacing -= dnorm(Type(0.0), spacing_devs(ft),exp(ln_spacing), true);
 
