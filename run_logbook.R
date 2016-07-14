@@ -4,8 +4,8 @@ df <- readRDS(file='data/data.RDS')
 n_years <- length(unique(df$year))
 df$spacing <- round(df$spacing)
 Version <- "models/spatiotemporal_cpue_spacing"
-dyn.unload( dynlib(Version))
-file.remove('models/spatiotemporal_cpue_spacing.o', 'models/spatiotemporal_cpue_spacing.dll')
+## dyn.unload( dynlib(Version))
+## file.remove('models/spatiotemporal_cpue_spacing.o', 'models/spatiotemporal_cpue_spacing.dll')
 compile( paste0(Version,".cpp"))
 dyn.load( dynlib(Version))
 
@@ -14,7 +14,7 @@ dyn.load( dynlib(Version))
 ## and full spatio-temporal (ST). Form=1 implies a random walk on hook
 ## spacing, form=2 is the HS model.
 run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
-    start <- sys.time()
+    start <- Sys.time()
     Inputs <- make.inputs(n_knots=n_knots, model=model, form=form,
                           likelihood=likelihood)
     Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
