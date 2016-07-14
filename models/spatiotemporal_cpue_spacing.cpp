@@ -151,11 +151,11 @@ Type objective_function<Type>::operator() ()
   REPORT(beta_depth);
   REPORT(spacing_std);
   REPORT(spacing);
-  // ADREPORT(Range);
-  // ADREPORT(SigmaE);
-  // ADREPORT(SigmaO);
-  // ADREPORT(Sigma);
-  //  ADREPORT(cph_t);
+  ADREPORT(Range);
+  ADREPORT(SigmaE);
+  ADREPORT(SigmaO);
+  ADREPORT(Sigma);
+  ADREPORT(cph_t);
   ADREPORT(spacing_std);
   REPORT(resids);
   return jnll;
