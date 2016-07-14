@@ -22,6 +22,7 @@ Params <-
     list(logcpue_mean=0, logcpue_sd=1, sigma_obs_mean=-.5, sigma_obs_sd=.5,
          gamma=0, beta=.1, lambda=1, logcpue=rep(0, len=data.hs$Ngroup), logsigma_obs=rep(0,
                                                         len=data.hs$Ngroup))
+Map <- list(lambda=factor(NA))
 Version <- "models/empirical_spacing"
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
@@ -34,7 +35,7 @@ lower['lambda'] <- 0; upper['lambda'] <- 5
 lower['logcpue_sd'] <- 0; upper['logcpue_sd'] <- Inf
 lower['sigma_obs_sd'] <- 0; upper['sigma_obs_sd'] <- Inf
 Obj <- MakeADFun(data=data.hs, parameters=Params,
-                 random=c('logsigma_obs', 'logcpue'), map=NULL)
+                 random=c('logsigma_obs', 'logcpue'), map=Map)
 Obj$env$beSilent()
 Opt <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
                control=list(trace=10, eval.max=1e4, iter.max=1e4),
