@@ -14,6 +14,7 @@ dyn.load( dynlib(Version))
 ## and full spatio-temporal (ST). Form=1 implies a random walk on hook
 ## spacing, form=2 is the HS model.
 run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
+    start <- sys.time()
     Inputs <- make.inputs(n_knots=n_knots, model=model, form=form,
                           likelihood=likelihood)
     Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
@@ -28,25 +29,27 @@ run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
     sd.spacing <- sd.df[grep('spacing_std', x=sd.df$par),]
     sd.spacing$spacing <- seq_along(sd.spacing$par)
     sd.par <- sd.df[-grep('spacing_std', x=sd.df$par),]
+    runtime <- as.numeric(difftime(Sys.time(),start, units='mins'))
     list(model=model, n_knots=n_knots, form=form, likelihood=likelihood,
-         report=report.temp, sd.spacing=sd.spacing,
+         runtime=runtime, report=report.temp, sd.spacing=sd.spacing,
          sd.par=sd.par, Obj=Obj, Opt=Opt)
 }
 
-## Run ST model with and without the HS formula with high
-for(form in 1:2){
-    temp <- run.logbook(n_knots=800, model='NS', form=2, trace=10)
-    if(form==1) saveRDS(temp, file='results/logbook.re.results.RDS')
-    if(form==2) saveRDS(temp, file='results/logbook.hs.results.RDS')
-}
-
 ## Increase spatial resolution to see when it's sufficiently large
-for(n_knots in c(50, 100, 150, 200, 300, 400, 500, 600, 700, 800){
+for(n_knots in c(50, 100, 150, 200, 300, 400, 500, 600, 700, 800)){
     print(n_knots)
     temp <- run.logbook(n_knots=n_knots, model='ST', form=1, trace=0)
     if(form==1) saveRDS(temp, file=paste0('results/logbook.re.', n_knots,'.RDS'))
     if(form==2) saveRDS(temp, file=paste0('results/logbook.hs.', n_knots,'.RDS'))
 }
+
+## Run ST model with and without the HS formula with high resolution
+for(form in 1:2){
+    temp <- run.logbook(n_knots=800, model='ST', form=2, trace=10)
+    if(form==1) saveRDS(temp, file='results/logbook.re.results.RDS')
+    if(form==2) saveRDS(temp, file='results/logbook.hs.results.RDS')
+}
+
 ## Cleanup
 dyn.unload( dynlib(Version))
 
