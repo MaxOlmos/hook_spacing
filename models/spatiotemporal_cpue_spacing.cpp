@@ -67,8 +67,10 @@ Type objective_function<Type>::operator() ()
   // Objective function and bookkeeping
   using namespace density;
   int n_i = cph_i.size();	// number of observations
-  vector<Type> jnll_comp(3);	// joint -log-likelihood in components
-  jnll_comp.setZero();		// initialize at zero
+  Type nll_likelihood=0;	// likelihood of data
+  Type nll_omega=0;		// spatial
+  Type nll_epsilon=0;		// spatio-temporal
+  Type nll_spacing=0;		// RW on hook spacing
 
   // Derived quantities
   Type Range = sqrt(8) / exp( ln_kappa );
@@ -113,23 +115,19 @@ Type objective_function<Type>::operator() ()
   }
 
   // Probability of random effects
-  jnll_comp(1) += // space
+  nll_omega += // space
     SCALE( GMRF(Q), 1/exp(ln_tau_O) )( omega_s );
   for( int t=0; t<n_t; t++)	// spatio-temporal
-    jnll_comp(2) += SCALE( GMRF(Q), 1/exp(ln_tau_E) )( epsilon_st.col(t) );
+    nll_epsilon += SCALE( GMRF(Q), 1/exp(ln_tau_E) )( epsilon_st.col(t) );
     // hook spacing effects
-  Type test=0;		// for some reason had to do as separate variable??
   for(int ft=0; ft<n_ft; ft++)
-    test -= dnorm(Type(0.0), spacing_devs(ft),exp(ln_spacing), true);
+    nll_spacing -= dnorm(Type(0.0), spacing_devs(ft),exp(ln_spacing), true);
 
   // Probability of the data, given random effects
   for( int i=0; i<n_i; i++){
     // Probability of data conditional on random effects (likelihood)
     if(likelihood==1) // lognormal case
-      jnll_comp(0) -= dlognorm(cph_i(i), mu_i(i), exp(ln_obs), true );
-    // else if(likelihood==2) // gamma case
-    //   jnll_comp(0) -= dgamma(cph_i(i), mu_i(i), exp(ln_obs), true );
-    //   else error("bad likelihood input");
+      nll_likelihood -= dlognorm(cph_i(i), mu_i(i), exp(ln_obs), true );
   }
 
   // Predict relative average catch rate over time
@@ -139,10 +137,13 @@ Type objective_function<Type>::operator() ()
 		   beta_geartype(0) + beta_hooksize(0) + beta_depth*80);
 
   // Reporting
-  Type jnll = jnll_comp.sum() + test;
+  Type jnll = nll_likelihood+nll_omega+nll_epsilon+nll_spacing;
   vector<Type> resids = mu_i-cph_i;
   // REPORT(jnll_comp);
-  REPORT(jnll);
+  REPORT(nll_likelihood);
+  REPORT(nll_omega);
+  REPORT(nll_epsilon);
+  REPORT(nll_spacing);
   REPORT(intercept);
   REPORT(beta_depth);
   REPORT(spacing_std);
