@@ -2,6 +2,7 @@
 
 ## The effect of resolution on the ST model
 knots <- c(50, 100, 150, 200, 300, 400, 500, 600, 700, 800)
+knots <- c(50, 150, 200, 300, 400, 500, 600, 700, 800)
 temp.list <- list(); k <- 1
 for(n_knots in knots){
     x <- paste0('results/logbook.hs.', n_knots,'.RDS')
@@ -16,6 +17,7 @@ for(n_knots in knots){
 res <- do.call(rbind, temp.list)
 ggplot(res, aes(n_knots, value, ymin=value-2*sd, ymax=value+2*sd)) +
     geom_line() + geom_errorbar() + facet_wrap('par', scales='free')
+ggplot(res, aes(n_knots, runtime)) + facet_wrap('par', scales='free') + geom_line()
 
 empirical.results <- readRDS('results/empirical.results.RDS')
 logbook.re.results <- readRDS('results/logbook.re.results.RDS')
