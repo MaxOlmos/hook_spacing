@@ -151,6 +151,10 @@ Type objective_function<Type>::operator() ()
   REPORT(beta_depth);
   REPORT(spacing_std);
   REPORT(spacing);
+  if(form==2){
+    Type max_ehook = 1/(1-pow(exp(-18*beta_spacing), 1));
+    ADREPORT(max_ehook);
+  }
   ADREPORT(Range);
   ADREPORT(SigmaE);
   ADREPORT(SigmaO);

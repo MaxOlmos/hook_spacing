@@ -86,5 +86,11 @@ Type objective_function<Type>::operator() ()
   ADREPORT(gamma);
   ADREPORT(lambda);
   ADREPORT(max_ehook);
+  ADREPORT(logcpue_mean);
+  ADREPORT(logcpue_sd);
+  Type sigma_obs_mean_exp=exp(sigma_obs_mean);
+  Type sigma_obs_sd_exp=exp(sigma_obs_sd);
+  ADREPORT(sigma_obs_mean_exp);
+  ADREPORT(sigma_obs_sd_exp);
   return jnll;
 }

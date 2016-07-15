@@ -42,8 +42,9 @@ Opt <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
                             lower=lower, upper=upper)
 temp <- sdreport(Obj)
 xx <- data.frame(par=names(temp$value), value=temp$value, sd=temp$sd)
-uncertainty.df <- data.frame(spacing=1:70, value=xx$value[1:70], sd=xx$sd[1:70])
-sd.df <- xx[-(1:70),]
+uncertainty.df <- subset(xx, par=='ehook')
+uncertainty.df$spacing <- 1:nrow(uncertainty.df)
+sd.df <- subset(xx, par!= 'ehook')
 empirical.results <- list(Obj=Obj, Opt=Opt, sdreport=temp,
                           uncertainty.df=uncertainty.df, sd.df=sd.df)
 saveRDS(empirical.results, file='results/empirical.results.RDS')
