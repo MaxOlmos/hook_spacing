@@ -20,7 +20,13 @@ run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
     Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                      random=Inputs$Random, map=Inputs$Map)
     Obj$env$beSilent()
+    ## Set bounds for parameters via limits in optimizer
+    lower <- rep(-Inf, len=length(unlist(Inputs$Params)))
+    upper <- rep(Inf,  len=length(unlist(Inputs$Params)))
+    names(upper) <- names(lower) <- names(unlist(Inputs$Params))
+    lower['gamma'] <- 0; upper['gamma'] <- 1
     Opt <- nlminb(start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
+                  lower=lower, upper=upper,
                   control=list(trace=trace, eval.max=1e4, iter.max=1e4 ))
     report.temp <- Obj$report();
     sd.temp <- sdreport(Obj)

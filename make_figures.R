@@ -34,7 +34,6 @@ sd.pars$table <- with(sd.pars,
  paste0(round(value,3), ' (', round(value-1.96*sd,3), '-', round(value+1.96*sd,3), ')'))
 g <- ggplot(sd.pars, aes(model, value, ymin=value-1.96*sd, ymax=value+1.96*sd)) + geom_pointrange() + facet_wrap('par')
 ggsave('plots/parameter_estimates_by_model.png', g, width=7, height=5)
-
 write.table(x=sd.pars, file='results/sd.table.csv', sep=',', row.names=FALSE)
 
 ## Plot effect hook comparisons for the three models
