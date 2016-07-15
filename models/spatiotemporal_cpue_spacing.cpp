@@ -52,6 +52,7 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(beta_hooksize); // hooksize effect
   PARAMETER(beta_depth);	   // depth effect
   PARAMETER(beta_spacing);	   // from H&S formula
+  PARAMETER(lambda);		   // from H&S formula
   //PARAMETER(alpha_spacing);	   // from H&S formula
   // Variances
   PARAMETER(ln_tau_O);		  // spatial process
@@ -90,7 +91,7 @@ Type objective_function<Type>::operator() ()
       else spacing(ft)=spacing(ft-1)+spacing_devs(ft);
     }
     // Multiplicative form used by H&S.
-    if(form==2) spacing(ft)=(1-exp(-beta_spacing*(ft+1)));
+    if(form==2) spacing(ft)=(1-pow(exp(-beta_spacing*(ft+1)), lambda));
   }
   // Standardized effect of spacing
   vector<Type> spacing_std(n_ft);
@@ -154,6 +155,8 @@ Type objective_function<Type>::operator() ()
   if(form==2){
     Type max_ehook = 1/(1-pow(exp(-18*beta_spacing), 1));
     ADREPORT(max_ehook);
+    ADREPORT(beta_spacing);
+    ADREPORT(lambda);
   }
   ADREPORT(Range);
   ADREPORT(SigmaE);

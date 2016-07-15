@@ -85,7 +85,7 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
                  beta_geartype= c(.17, .3, .3),
                  beta_month=rep(0, length(levels(df$month))),
                  beta_hooksize=rep(0, length(levels(df$hooksize))),
-                 beta_depth=0, beta_spacing=0,
+                 beta_depth=0, beta_spacing=0, lambda=1,
                  ln_tau_O=-.6, ln_tau_E=.25,
                  ln_kappa=.3,  ln_obs=-.2, ln_spacing=0,
                  spacing_devs=rep(0, length=Data$n_ft),
