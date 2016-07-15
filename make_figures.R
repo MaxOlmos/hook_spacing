@@ -26,9 +26,16 @@ logbook.re.results <- readRDS('results/logbook.re.results.RDS')
 logbook.hs.results <- readRDS('results/logbook.hs.results.RDS')
 
 ## Make CSV files for tables
-write.table(x=empirical.results$sd.df, file='results/table.empirical.csv', sep=',', row.names=FALSE)
-write.table(x=logbook.re.results$sd.par, file='results/table.logbook.re.csv', sep=',', row.names=FALSE)
-write.table(x=logbook.hs.results$sd.par, file='results/table.logbook.hs.csv', sep=',', row.names=FALSE)
+sd.pars <- rbind(cbind(model='empirical', empirical.results$sd.df),
+                 cbind(model='logbook.re', logbook.re.results$sd.par),
+                 cbind(model='logbook.hs', logbook.hs.results$sd.par))
+sd.pars <- subset(sd.pars, par !='cph_t')
+sd.pars$table <- with(sd.pars,
+ paste0(round(value,3), ' (', round(value-1.96*sd,3), '-', round(value+1.96*sd,3), ')'))
+g <- ggplot(sd.pars, aes(model, value, ymin=value-1.96*sd, ymax=value+1.96*sd)) + geom_pointrange() + facet_wrap('par')
+ggsave('plots/parameter_estimates_by_model.png', g, width=7, height=5)
+
+write.table(x=sd.pars, file='results/sd.table.csv', sep=',', row.names=FALSE)
 
 ## Plot effect hook comparisons for the three models
 uncertainty.df <- rbind.fill(data.frame(model='empirical', empirical.results$uncertainty.df),
