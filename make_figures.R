@@ -8,16 +8,17 @@ for(n_knots in knots){
     x <- paste0('results/logbook.hs.', n_knots,'.RDS')
     if(file.exists(x)){
         y <- readRDS(x)
-        temp <- with(y,
-                     data.frame(n_knots=n_knots, model=model, form=form, nll=report$nll_likelihood,
-                                intercept=report$intercept, runtime=runtime))
-        temp.list[[k]] <- cbind(temp, y$sd.par[1:5,]); k <- k+1
+        temp <- with(y, data.frame(n_knots=n_knots, model=model, form=form, nll=report$nll_likelihood,
+                    intercept=report$intercept, runtime=runtime))
+        temp.list[[k]] <- cbind(temp,
+        rbind(data.frame(par='runtime', value=y$runtime, sd=0), y$sd.par[1:5,]));
+        k <- k+1
     }
 }
 res <- do.call(rbind, temp.list)
-ggplot(res, aes(n_knots, value, ymin=value-2*sd, ymax=value+2*sd)) +
+g <- ggplot(res, aes(n_knots, value, ymin=value-2*sd, ymax=value+2*sd)) +
     geom_line() + geom_errorbar() + facet_wrap('par', scales='free')
-ggplot(res, aes(n_knots, runtime)) + facet_wrap('par', scales='free') + geom_line()
+ggsave('plots/resolution_effect.png', g, width=7, height=5)
 
 empirical.results <- readRDS('results/empirical.results.RDS')
 logbook.re.results <- readRDS('results/logbook.re.results.RDS')
