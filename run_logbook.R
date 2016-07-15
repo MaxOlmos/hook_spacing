@@ -37,15 +37,16 @@ run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
 
 ## Increase spatial resolution to see when it's sufficiently large
 for(n_knots in c(50, 100, 150, 200, 300, 400, 500, 600, 700, 800)){
+    form <- 2
     print(n_knots)
-    temp <- run.logbook(n_knots=n_knots, model='ST', form=1, trace=0)
+    temp <- run.logbook(n_knots=n_knots, model='ST', form=form, trace=0)
     if(form==1) saveRDS(temp, file=paste0('results/logbook.re.', n_knots,'.RDS'))
     if(form==2) saveRDS(temp, file=paste0('results/logbook.hs.', n_knots,'.RDS'))
 }
 
 ## Run ST model with and without the HS formula with high resolution
 for(form in 1:2){
-    temp <- run.logbook(n_knots=800, model='ST', form=2, trace=10)
+    temp <- run.logbook(n_knots=800, model='ST', form=form, trace=10)
     if(form==1) saveRDS(temp, file='results/logbook.re.results.RDS')
     if(form==2) saveRDS(temp, file='results/logbook.hs.results.RDS')
 }
