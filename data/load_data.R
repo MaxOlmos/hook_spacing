@@ -1,4 +1,4 @@
-
+setwd('data')
 ## ldlog <- read.csv("ldlog.csv")
 ## save(ldlog, file="ldlog.Rdata")
 print("This file loads ldlog and cleans it up")
@@ -60,6 +60,11 @@ ldlog$cpue.original <- with(ldlog, catwgt/effskthld)
 ldlog$cpue <- with(ldlog, catwgt/effskate)
 ldlog$cpue[is.infinite(ldlog$cpue)] <- NA
 ldlog$cpue.corrected <- with(ldlog, ifelse(geartype=="Snap", cpue*1.35, cpue))
+## Actually using catch for my current analysis
+ldlog$catch <- ldlog$catwgt
+100*mean(ldlog$catch==0, na.rm=TRUE)
+100*mean(ldlog$catch==0 | is.na(ldlog$catch), na.rm=TRUE)
+ldlog$hooks <- with(ldlog, skthld*hkskt)
 ## Some crazy outliers in CPUE which make the plots realy hard to read, so
 ## I created a truncated version where high values were capped at 500.
 ldlog$truncated.cpue <- with(ldlog, pmin(cpue, 500))
@@ -108,35 +113,36 @@ ldlog$target <- gsub("3|5|6|7|8|9", "Mixed", x=ldlog$target)
 ldlog$target <- gsub("2|4", "Abnormal/Incomplete", x=ldlog$target)
 ldlog$year <- ldlog$logyr
 ldlog.annual <- ddply(ldlog, .(year,regcde), summarize,
-                     pct.coords=100*(1-mean(is.na(longitude) | is.na(latitude))),
-                     total.sets=length(year))
+        pct.coords=100*(1-mean(is.na(longitude) | is.na(latitude))),
+                      pct.zeroes=100*(1-mean(catch>0, na.rm=TRUE)),
+                      total.sets=length(year))
 ldlog.annual.wide <- melt(ldlog.annual, id.vars=c('year', 'regcde'))
 g <- ggplot(ldlog.annual.wide, aes(year, value, color=regcde, group=regcde)) + geom_line() +
     facet_grid(variable~., scales='free')
-ggsave('plots/pct.coords.png', g, width=ggwidth, height=ggheight)
-
+ggsave('../plots/pct.coords.png', g, width=ggwidth, height=ggheight)
 ### end of processing whole data set
 
 ### For project just using certain area, and need to futher cleanup the data.
 df <- subset(ldlog, year >= 1995 & year < 2013 & regcde=='3A' & longitude
              >-156 & longitude < -135 & latitude > 56 & target=='Halibut' &
-             geartype != "Unknown" & cpue.corrected>0)
+             geartype %in% c('Autoline', 'Fixed', 'Snap') & catch>0)
 df$depth <- rowMeans(df[,c('dep1', 'dep2')], na.rm=TRUE)
 df$hooksize <- factor(df$hksiz)
 df$year <- factor(df$year)
-df$cpue <- df$cpue.corrected            # using version corrected for snap gear
+df$cpue <- df$cpue.corrected            # using version correcte
 df$logcpue <- log(df$cpue)
 df$spacing <- df$hkspc
-df <- subset(df, select=c(cph, cpue, logcpue, year, spacing, month, geartype, statarea,
+df <- subset(df, select=c(catch,  year, spacing, month, geartype, statarea,
                    hooksize, depth, longitude, latitude))
 df <- data.frame(droplevels(na.omit(df)))
 g <- ggplot(df, aes(geartype, spacing)) + geom_violin()
-ggsave('plots/spacings.png', g, width=ggwidth, height=ggheight)
+ggsave('../plots/spacings.png', g, width=ggwidth, height=ggheight)
 g <- ggplot(df, aes(longitude, latitude, color=depth)) + geom_point(alpha=.1, size=.01)
-ggsave('plots/spatial_depth.png', g, width=ggwidth, height=ggheight)
+ggsave('../plots/spatial_depth.png', g, width=ggwidth, height=ggheight)
 g <- ggplot(df, aes(longitude, latitude, color=statarea)) + geom_point(alpha=.1, size=.1)
-ggsave('plots/spatial_statarea.png', g, width=ggwidth, height=ggheight)
+ggsave('../plots/spatial_statarea.png', g, width=ggwidth, height=ggheight)
 
+setwd('..')
 message("Saving data to data.RDS for later use")
 saveRDS(df, file="data.RDS")
 ## rm(df, ldlog, ldlog.annual, g, i, effective.skates, hkskt_implied)
