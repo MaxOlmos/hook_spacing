@@ -132,7 +132,7 @@ df$year <- factor(df$year)
 df$cpue <- df$cpue.corrected            # using version correcte
 df$logcpue <- log(df$cpue)
 df$spacing <- df$hkspc
-df <- subset(df, select=c(catch,  year, spacing, month, geartype, statarea,
+df <- subset(df, select=c(catch, hooks, year, spacing, month, geartype, statarea,
                    hooksize, depth, longitude, latitude))
 df <- data.frame(droplevels(na.omit(df)))
 g <- ggplot(df, aes(geartype, spacing)) + geom_violin()
@@ -142,9 +142,9 @@ ggsave('../plots/spatial_depth.png', g, width=ggwidth, height=ggheight)
 g <- ggplot(df, aes(longitude, latitude, color=statarea)) + geom_point(alpha=.1, size=.1)
 ggsave('../plots/spatial_statarea.png', g, width=ggwidth, height=ggheight)
 
-setwd('..')
 message("Saving data to data.RDS for later use")
 saveRDS(df, file="data.RDS")
+setwd('..')
 ## rm(df, ldlog, ldlog.annual, g, i, effective.skates, hkskt_implied)
 ## End of processing data
 ## ------------------------------------------------------------
