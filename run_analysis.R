@@ -30,5 +30,21 @@ plot(18,1, ylim=c(0,2), xlim=range(x))
 g(x,.05,10.1)
 
 
+k <- 50
+theta <- 15/k
+xmax <- qgamma(p=.999, shape=k, scale=theta)
+x <- seq(0.001, xmax, len=1000)
+par(mfrow=c(1,2))
+plot(x, dgamma(x, shape=k, scale=theta))
+abline(v=theta*k)
+theta <- 5000/k
+xmax <- qgamma(p=.999, shape=k, scale=theta)
+x <- seq(qgamma(0.001, k, scale=theta), xmax, len=1000)
+plot(x, dgamma(x, shape=k, scale=theta))
+abline(v=theta*k)
 
-
+x <- seq(0.001, 20, len=10000)
+mat <- cbind(c(1,2,3,5,9,7.5,.5), c(2,2,2,1,.5,1,1))
+yy <- ldply(1:nrow(mat), function(xx)
+  cbind(x=x, row=xx, shape=mat[xx,1], theta=mat[xx,2], density=dgamma(x, shape=mat[xx,1], scale=mat[xx,2])))
+ggplot(yy, aes(x, density, group=row, color=row)) + geom_line() + ylim(0,.5)
