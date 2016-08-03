@@ -139,6 +139,35 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
   return(list(Data=Data, Params=Params, Random=Random[[model]], Map=Map[[model]]))
 }
 
+run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
+    start <- Sys.time()
+    Inputs <- make.inputs(n_knots=n_knots, model=model, form=form,
+                          likelihood=likelihood)
+    Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
+                     random=Inputs$Random, map=Inputs$Map)
+    Obj$env$beSilent()
+    ## Set bounds for parameters via limits in optimizer
+    lower <- rep(-Inf, len=length(unlist(Inputs$Params)))
+    upper <- rep(Inf,  len=length(unlist(Inputs$Params)))
+    names(upper) <- names(lower) <- names(unlist(Inputs$Params))
+    lower['gamma'] <- 0; upper['gamma'] <- 1
+    Opt <- nlminb(start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
+                  lower=lower, upper=upper,
+                  control=list(trace=trace, eval.max=1e4, iter.max=1e4 ))
+    report.temp <- Obj$report();
+    sd.temp <- sdreport(Obj)
+    sd.df <- data.frame(par=names(sd.temp$value), value=sd.temp$value, sd=sd.temp$sd)
+    sd.df$par <- as.character(sd.df$par)
+    sd.spacing <- sd.df[grep('spacing_std', x=sd.df$par),]
+    sd.spacing$spacing <- seq_along(sd.spacing$par)
+    sd.par <- sd.df[-grep('spacing_std', x=sd.df$par),]
+    runtime <- as.numeric(difftime(Sys.time(),start, units='mins'))
+    list(model=model, n_knots=n_knots, form=form, likelihood=likelihood,
+         runtime=runtime, report=report.temp, sd.spacing=sd.spacing,
+         sd.par=sd.par, Obj=Obj, Opt=Opt)
+}
+
+
 simulate.data <- function(loc_xy, loc_centers, params, n_years, SD_obs=.5,
                           Scale=1, SD_omega=1.5, SD_epsilon=.2 ){
     ## I'm passing locations into this instead of randomly generating them
@@ -169,4 +198,18 @@ simulate.data <- function(loc_xy, loc_centers, params, n_years, SD_obs=.5,
     x$s_i <- x$cluster
     x$catch.simulated <- rnorm(n=length(x$mu_i), mean=x$mu_i, sd=SD_obs)
     return( x )
+}
+
+plot.spacing.fit <- function(results, multiple.fits=FALSE){
+  if(multiple.fits){
+    results <- ldply(results, function(y) cbind(model=y$model, form=y$form,
+                                                y$sd.spacing))
+  } else {
+    results <- results$sd.spacing
+  }
+  print(str(results))
+  g <- ggplot(results, aes(spacing, value, ymax=value+2*sd, ymin=value-2*sd)) +
+    geom_pointrange()
+  if(multiple.fits) g <-  g+facet_grid(model~form)
+  g
 }

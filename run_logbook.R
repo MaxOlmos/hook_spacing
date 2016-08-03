@@ -4,8 +4,8 @@ df <- readRDS(file='data/data.RDS')
 n_years <- length(unique(df$year))
 df$spacing <- round(df$spacing)
 Version <- "models/spatiotemporal_cpue_spacing"
-## dyn.unload( dynlib(Version))
-## file.remove('models/spatiotemporal_cpue_spacing.o', 'models/spatiotemporal_cpue_spacing.dll')
+dyn.unload( dynlib(Version))
+file.remove('models/spatiotemporal_cpue_spacing.o', 'models/spatiotemporal_cpue_spacing.dll')
 compile( paste0(Version,".cpp"))
 dyn.load( dynlib(Version))
 
@@ -13,33 +13,13 @@ dyn.load( dynlib(Version))
 ## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
 ## and full spatio-temporal (ST). Form=1 implies a random walk on hook
 ## spacing, form=2 is the HS model.
-run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
-    start <- Sys.time()
-    Inputs <- make.inputs(n_knots=n_knots, model=model, form=form,
-                          likelihood=likelihood)
-    Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
-                     random=Inputs$Random, map=Inputs$Map)
-    Obj$env$beSilent()
-    ## Set bounds for parameters via limits in optimizer
-    lower <- rep(-Inf, len=length(unlist(Inputs$Params)))
-    upper <- rep(Inf,  len=length(unlist(Inputs$Params)))
-    names(upper) <- names(lower) <- names(unlist(Inputs$Params))
-    lower['gamma'] <- 0; upper['gamma'] <- 1
-    Opt <- nlminb(start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
-                  lower=lower, upper=upper,
-                  control=list(trace=trace, eval.max=1e4, iter.max=1e4 ))
-    report.temp <- Obj$report();
-    sd.temp <- sdreport(Obj)
-    sd.df <- data.frame(par=names(sd.temp$value), value=sd.temp$value, sd=sd.temp$sd)
-    sd.df$par <- as.character(sd.df$par)
-    sd.spacing <- sd.df[grep('spacing_std', x=sd.df$par),]
-    sd.spacing$spacing <- seq_along(sd.spacing$par)
-    sd.par <- sd.df[-grep('spacing_std', x=sd.df$par),]
-    runtime <- as.numeric(difftime(Sys.time(),start, units='mins'))
-    list(model=model, n_knots=n_knots, form=form, likelihood=likelihood,
-         runtime=runtime, report=report.temp, sd.spacing=sd.spacing,
-         sd.par=sd.par, Obj=Obj, Opt=Opt)
-}
+NS1 <- run.logbook(n_knots=200, model='NS' , form=1, likelihood=1)
+NS2 <- run.logbook(n_knots=200, model='NS' , form=2, likelihood=1)
+S1 <- run.logbook(n_knots=200, model='S' , form=1, likelihood=1)
+S2 <- run.logbook(n_knots=200, model='S' , form=2, likelihood=1)
+ST1 <- run.logbook(n_knots=200, model='ST' , form=1, likelihood=1)
+ST2 <- run.logbook(n_knots=200, model='ST' , form=2, likelihood=1)
+plot.spacing.fit(list(NS1, NS2, S1, S2, ST1, ST2), TRUE)
 
 ## Increase spatial resolution to see when it's sufficiently large
 for(n_knots in c(50, 100, 150, 200, 300, 400, 500, 600, 700, 800)){
@@ -52,7 +32,7 @@ for(n_knots in c(50, 100, 150, 200, 300, 400, 500, 600, 700, 800)){
 
 ## Run ST model with and without the HS formula with high resolution
 for(form in 1:2){
-    temp <- run.logbook(n_knots=800, model='ST', form=form, trace=10)
+    temp <- run.logbook(n_knots=400, model='ST', form=form, trace=10)
     if(form==1) saveRDS(temp, file='results/logbook.re.results.RDS')
     if(form==2) saveRDS(temp, file='results/logbook.hs.results.RDS')
 }
