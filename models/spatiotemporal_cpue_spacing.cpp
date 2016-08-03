@@ -23,7 +23,7 @@ bool isNA(Type x){
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
-  // Data inputs
+  //// Data inputs
   DATA_INTEGER(likelihood); // the likelihood function to use
   DATA_INTEGER(form);	    // form of the hook spacing; 1=RE; 2=H&S
   DATA_INTEGER(space);	    // form of the spatial component; 0=NS, 1=S; 2=ST
@@ -39,13 +39,16 @@ Type objective_function<Type>::operator() ()
   // DATA_FACTOR(statarea_i);
   // vectors of real data
   DATA_VECTOR(depth_i); // depth covariate
-  DATA_VECTOR(cph_i);  // catch/hook (response variable); natural scale
+  DATA_VECTOR(catch_i);  // catch/hook (response variable); natural scale
+  DATA_VECTOR(hooks_i); // the number of hooks
   // SPDE objects from R-INLA
   DATA_SPARSE_MATRIX(M0);
   DATA_SPARSE_MATRIX(M1);
   DATA_SPARSE_MATRIX(M2);
+
+  //// Parameters
   // Fixed effects
-  PARAMETER(intercept);		   // global mean log cph
+  PARAMETER(intercept);		   // global mean log catch
   PARAMETER_VECTOR(beta_year);	   // year effect
   PARAMETER_VECTOR(beta_geartype); // geartype effect
   PARAMETER_VECTOR(beta_month);	   // month effect
@@ -68,7 +71,7 @@ Type objective_function<Type>::operator() ()
 
   // Objective function and bookkeeping
   using namespace density;
-  int n_i = cph_i.size();	// number of observations
+  int n_i = catch_i.size();	// number of observations
   Type nll_likelihood=0;	// likelihood of data
   Type nll_omega=0;		// spatial
   Type nll_epsilon=0;		// spatio-temporal
@@ -131,7 +134,8 @@ Type objective_function<Type>::operator() ()
   for( int i=0; i<n_i; i++){
     // Probability of data conditional on random effects (likelihood)
     if(likelihood==1) // lognormal case
-      nll_likelihood -= dlognorm(cph_i(i), mu_i(i), exp(ln_obs), true );
+      nll_likelihood -=
+	dnorm(log(catch_i(i)), log(hooks_i(i))+mu_i(i), exp(ln_obs), true);
   }
 
   // Predict relative average catch rate over time
@@ -142,7 +146,7 @@ Type objective_function<Type>::operator() ()
 
   // Reporting
   Type jnll = nll_likelihood+nll_omega+nll_epsilon+nll_spacing;
-  vector<Type> resids = mu_i-log(cph_i);
+  vector<Type> resids = log(hooks_i) +mu_i-log(catch_i);
   // REPORT(jnll_comp);
   REPORT(nll_likelihood);
   REPORT(nll_omega);

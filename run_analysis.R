@@ -3,7 +3,7 @@
 ### ------------------------------------------------------------
 ## Step 1: prepare workspace and load data
 source('startup.R')
-## source('load_data.R')
+## source('data/load_data.R')
 
 ### ------------------------------------------------------------
 ## Step 2: Run the spatiotemporal model.

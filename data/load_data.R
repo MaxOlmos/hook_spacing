@@ -125,7 +125,8 @@ ggsave('../plots/pct.coords.png', g, width=ggwidth, height=ggheight)
 ### For project just using certain area, and need to futher cleanup the data.
 df <- subset(ldlog, year >= 1995 & year < 2013 & regcde=='3A' & longitude
              >-156 & longitude < -135 & latitude > 56 & target=='Halibut' &
-             geartype %in% c('Autoline', 'Fixed', 'Snap') & catch>0)
+               geartype %in% c('Autoline', 'Fixed', 'Snap') & catch>0 &
+                 hooks >0 & hkspc < 50)
 df$depth <- rowMeans(df[,c('dep1', 'dep2')], na.rm=TRUE)
 df$hooksize <- factor(df$hksiz)
 df$year <- factor(df$year)

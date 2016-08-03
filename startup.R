@@ -68,7 +68,8 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
   if(model=='S') space <- 1
   if(model=='ST') space <- 2
   Data <- list(likelihood=likelihood, form=form, space=space,
-               cph_i=df$cph,
+               catch_i=df$catch,
+               hooks_i=df$hooks,
                n_t=length(unique(df$year)),
                n_ft=max(df$spacing)+5,
                s_i=spde$cluster-1,
@@ -103,13 +104,14 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
   ## Need to fix first level of each factor at 0 so they are
   ## identifiable. Get merged into the intercept. I.e., contrasts in R.
   list.factors <- list(
-    beta_year=factor(c(NA, 1:(length(levels(df$year))-1))),
+    ##  beta_year=factor(c(NA, 1:(length(levels(df$year))-1))),
     ## beta_geartype=factor(c(NA, 1:(length(levels(df$geartype))-1))),
     ## beta_month=factor(c(NA, 1:(length(levels(df$month))-1))),
     ## beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))))
-  ## OR turn them totally off
-  ## list.factors <- list(
-  ##   beta_year=factor(rep(NA, length(levels(df$year)))),
+    ## OR turn them totally off
+    ## list.factors <- list(
+    lambda=factor(NA),
+    beta_year=factor(rep(NA, length(levels(df$year)))),
     beta_geartype=factor(rep(NA, length(levels(df$geartype)))),
     beta_month=factor(rep(NA, length(levels(df$month)))),
     beta_hooksize=factor(rep(NA, length(levels(df$hooksize)))))
@@ -165,6 +167,6 @@ simulate.data <- function(loc_xy, loc_centers, params, n_years, SD_obs=.5,
         x$epsilon_i
     ## Simulate samples for each site and year
     x$s_i <- x$cluster
-    x$cph.simulated <- rnorm(n=length(x$mu_i), mean=x$mu_i, sd=SD_obs)
+    x$catch.simulated <- rnorm(n=length(x$mu_i), mean=x$mu_i, sd=SD_obs)
     return( x )
 }
