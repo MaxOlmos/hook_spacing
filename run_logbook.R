@@ -9,42 +9,15 @@ file.remove('models/spatiotemporal_cpue_spacing.o', 'models/spatiotemporal_cpue_
 compile( paste0(Version,".cpp"))
 dyn.load( dynlib(Version))
 
+nu <- exp(1.5)*df$hooks*(1-exp(-.08*df$spacing))
+CV <- .1
+y <- rgamma(nrow(df), shape=1/CV^2, scale=nu*CV^2)
+df$catch <- y
+
 ### ------------------------------------------------------------
 ## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
 ## and full spatio-temporal (ST). Form=1 implies a random walk on hook
 ## spacing, form=2 is the HS model.
-NS11 <- run.logbook(n_knots=10, model='NS' , form=1, likelihood=1)
-NS21 <- run.logbook(n_knots=10, model='NS' , form=2, likelihood=1)
-NS12 <- run.logbook(n_knots=10, model='NS' , form=1, likelihood=2)
-NS22 <- run.logbook(n_knots=10, model='NS' , form=2, likelihood=2)
-plot.spacing.fit(list(NS11, NS21, NS12, NS22), TRUE)
-
-S11 <- run.logbook(n_knots=400, model='S' , form=1, likelihood=1)
-S21 <- run.logbook(n_knots=400, model='S' , form=2, likelihood=1)
-S12 <- run.logbook(n_knots=400, model='S' , form=1, likelihood=2)
-S22 <- run.logbook(n_knots=400, model='S' , form=2, likelihood=2)
-plot.spacing.fit(list(S11, S21, S12, S22), TRUE)
-
-par(mfrow=c(1,2))
-qqnorm(NS21$report$resids)
-qqnorm(NS22$report$resids)
-
-
-
-S1 <- run.logbook(n_knots=200, model='S' , form=1, likelihood=1)
-S2 <- run.logbook(n_knots=200, model='S' , form=2, likelihood=1)
-ST1 <- run.logbook(n_knots=200, model='ST' , form=1, likelihood=1)
-ST2 <- run.logbook(n_knots=200, model='ST' , form=2, likelihood=1)
-plot.spacing.fit(list(NS1, NS2, S1, S2, ST1, ST2), TRUE)
-
-## Increase spatial resolution to see when it's sufficiently large
-for(n_knots in c(50, 100, 150, 200, 300, 400, 500, 600, 700, 800)){
-    form <- 2
-    print(n_knots)
-    temp <- run.logbook(n_knots=n_knots, model='ST', form=form, trace=0)
-    if(form==1) saveRDS(temp, file=paste0('results/logbook.re.', n_knots,'.RDS'))
-    if(form==2) saveRDS(temp, file=paste0('results/logbook.hs.', n_knots,'.RDS'))
-}
 
 ## Run ST model with and without the HS formula with high resolution
 for(form in 1:2){

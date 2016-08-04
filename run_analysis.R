@@ -62,7 +62,7 @@ opt <- optim(par=c(CV, beta0, beta1), fn=nll, lower=c(0,0,0), method='L-BFGS-B')
 pred=x*opt$par[3]+opt$par[2]
 resids <- (pred-y)
 var <- (1/CV^2)*(pred*CV^2)^2
-resids.pearson <- (pred-y)/var
+resids.pearson <- (pred-y)/(pred*CV)
 par(mfrow=c(1,2))
 qqnorm(resids)
 qqnorm(resids.pearson)
