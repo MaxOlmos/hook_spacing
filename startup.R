@@ -202,7 +202,7 @@ simulate.data <- function(loc_xy, loc_centers, params, n_years, SD_obs=.5,
 
 plot.spacing.fit <- function(results, multiple.fits=FALSE){
   if(multiple.fits){
-    results <- ldply(results, function(y) cbind(model=y$model, form=y$form,
+    results <- ldply(results, function(y) cbind(model=y$model, likelihood=y$likelihood, form=y$form,
                                                 y$sd.spacing))
   } else {
     results <- results$sd.spacing
@@ -210,6 +210,6 @@ plot.spacing.fit <- function(results, multiple.fits=FALSE){
   print(str(results))
   g <- ggplot(results, aes(spacing, value, ymax=value+2*sd, ymin=value-2*sd)) +
     geom_pointrange()
-  if(multiple.fits) g <-  g+facet_grid(model~form)
+  if(multiple.fits) g <-  g+facet_grid(model+likelihood~form)
   g
 }

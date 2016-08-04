@@ -13,8 +13,24 @@ dyn.load( dynlib(Version))
 ## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
 ## and full spatio-temporal (ST). Form=1 implies a random walk on hook
 ## spacing, form=2 is the HS model.
-NS1 <- run.logbook(n_knots=200, model='NS' , form=1, likelihood=1)
-NS2 <- run.logbook(n_knots=200, model='NS' , form=2, likelihood=1)
+NS11 <- run.logbook(n_knots=10, model='NS' , form=1, likelihood=1)
+NS21 <- run.logbook(n_knots=10, model='NS' , form=2, likelihood=1)
+NS12 <- run.logbook(n_knots=10, model='NS' , form=1, likelihood=2)
+NS22 <- run.logbook(n_knots=10, model='NS' , form=2, likelihood=2)
+plot.spacing.fit(list(NS11, NS21, NS12, NS22), TRUE)
+
+S11 <- run.logbook(n_knots=400, model='S' , form=1, likelihood=1)
+S21 <- run.logbook(n_knots=400, model='S' , form=2, likelihood=1)
+S12 <- run.logbook(n_knots=400, model='S' , form=1, likelihood=2)
+S22 <- run.logbook(n_knots=400, model='S' , form=2, likelihood=2)
+plot.spacing.fit(list(S11, S21, S12, S22), TRUE)
+
+par(mfrow=c(1,2))
+qqnorm(NS21$report$resids)
+qqnorm(NS22$report$resids)
+
+
+
 S1 <- run.logbook(n_knots=200, model='S' , form=1, likelihood=1)
 S2 <- run.logbook(n_knots=200, model='S' , form=2, likelihood=1)
 ST1 <- run.logbook(n_knots=200, model='ST' , form=1, likelihood=1)

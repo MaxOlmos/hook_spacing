@@ -133,9 +133,12 @@ Type objective_function<Type>::operator() ()
   // Probability of the data, given random effects
   for( int i=0; i<n_i; i++){
     // Probability of data conditional on random effects (likelihood)
-    if(likelihood==1) // lognormal case
+    if(likelihood==1) // lognormal case; see top of file for function
       nll_likelihood -=
-	dnorm(log(catch_i(i)), log(hooks_i(i))+mu_i(i), exp(ln_obs), true);
+	dlognorm(catch_i(i), log(hooks_i(i))+mu_i(i), exp(ln_obs), true);
+    if(likelihood==2) // gamma case
+      nll_likelihood -=
+    dgamma(catch_i(i), 1/pow(Sigma,2), hooks_i(i)*exp(mu_i(i))*pow(Sigma,2), true);
   }
 
   // Predict relative average catch rate over time
@@ -146,7 +149,10 @@ Type objective_function<Type>::operator() ()
 
   // Reporting
   Type jnll = nll_likelihood+nll_omega+nll_epsilon+nll_spacing;
-  vector<Type> resids = log(hooks_i) +mu_i-log(catch_i);
+  vector<Type> resids; // pearson residuals: resid/var
+  if(likelihood==1) resids = (log(hooks_i) +mu_i-log(catch_i))/Sigma;
+  if(likelihood==2) resids = (hooks_i*exp(mu_i)-catch_i)/
+		      (Sigma*hooks_i*exp(mu_i));
   // REPORT(jnll_comp);
   REPORT(nll_likelihood);
   REPORT(nll_omega);
@@ -162,12 +168,12 @@ Type objective_function<Type>::operator() ()
     ADREPORT(beta_spacing);
     ADREPORT(lambda);
   }
+  ADREPORT(Sigma);
   ADREPORT(Range);
   ADREPORT(SigmaE);
   ADREPORT(SigmaO);
-  ADREPORT(Sigma);
-  ADREPORT(cph_t);
   ADREPORT(spacing_std);
+  ADREPORT(cph_t);
   REPORT(resids);
   return jnll;
 }
