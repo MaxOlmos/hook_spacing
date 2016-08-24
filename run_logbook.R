@@ -1,6 +1,7 @@
 ### ------------------------------------------------------------
 ## Step 1: read in and prep the data for this model
-df <- readRDS(file='data/data.RDS')
+df.unfiltered <- readRDS(file='data/data.RDS')
+df.filtered <- df[-(1:5000),]
 n_years <- length(unique(df$year))
 df$spacing <- round(df$spacing)
 Version <- "models/spatiotemporal_cpue_spacing"
@@ -10,30 +11,66 @@ compile( paste0(Version,".cpp"))
 dyn.load( dynlib(Version))
 
 ### ------------------------------------------------------------
-## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
+## Step 2. Model exploration. Models= no spatial effect (NS), spatiaggl model (S)
 ## and full spatio-temporal (ST). Form=1 implies a random walk on hook
 ## spacing, form=2 is the parametric HS model.
 
-st <- run.logbook(n_knots=50, model='ST', form=2, trace=10)
+### Explore effects of key dimensions.
+## Spatial effect
 ns <- run.logbook(n_knots=50, model='NS', form=2, trace=10)
-test <- rbind.fill(st$sd.par, ns$sd.par)
-nrow(test)
-test$model <- rep(c("ST", "NS"), each=nrow(test)/2)
+s <- run.logbook(n_knots=50, model='S', form=2, trace=10)
+st <- run.logbook(n_knots=50, model='ST', form=2, trace=10)
+g <- plot.parameter.comparison(list(ns,s,st),
+     level.name='model', levels=c('NS', 'S', 'ST'))
+ggsave('plots/par_comparison_model.png')
+
+## Spacing form
+st1 <- run.logbook(n_knots=50, model='ST', form=1, trace=10)
+st2 <- run.logbook(n_knots=50, model='ST', form=2, trace=10)
+plot.parameter.comparison(list(st1, st2),
+     level.name='model', levels=c('Nonparametric', 'Hamley & Skud'))
+ggsave('plots/par_comparison_form.png')
+
+## Data filtering
+df <- df.filtered
+d1 <- run.logbook(n_knots=50, model='ST', form=2, trace=10)
+df <- df.unfiltered
+d2 <- run.logbook(n_knots=50, model='ST', form=2, trace=10)
+plot.parameter.comparison(list(d1,d2),
+     level.name='data', levels=c('Filtered', 'Unfiltered'))
+ggsave('plots/par_comparison_data.png')
+
+plot.parameter.comparison <- function(fits, level.name, levels){
+  test <- ldply(fits, function(x) cbind(level=level.name, x$sd.par))
+  test[,level.name] <- rep(levels, each=nrow(test)/length(levels))
+  test$par3 <- as.numeric(as.factor(paste0(test$par2, "_", test[,level.name])))
+  g <- ggplot(test, aes_string('par3', 'value', color=level.name,
+  group=level.name, ymin='lwr', ymax='upr')) +
+    geom_linerange(lwd=1.5) + facet_wrap('par', scales='free') +
+    geom_hline(yintercept=0)
+  return(g)
+}
+
+plot.spacing.comparison <- function(fits, level.name, levels){
+  test <- ldply(fits, function(x) cbind(level=level.name, x$sd.spacing))
+  test[,level.name] <- rep(levels, each=nrow(test)/length(levels))
+  test$par3 <- as.numeric(as.factor(paste0(test$par2, "_", test[,level.name])))
+  g <- ggplot(test, aes(par3, value, color=model, group=model, ymin=lwr, ymax=upr)) +
+    geom_linerange(lwd=1.5) + facet_wrap('par', scales='free') +
+    geom_hline(yintercept=0)
+  return(g)
+}
+
+ggplot(test, aes(par2, value, group=model, ymin=lwr, ymax=upr)) +
+  geom_linerange() + facet_wrap('par', scales='free') + geom_hline(yintercept=0)
+
 
 test$sd.par$table
 ggplot(st$sd.spacing, aes(spacing, value, ymin=lwr, ymax=upr)) +
   geom_pointrange()
-ggplot(test, aes(par2, value, ymin=lwr, ymax=upr)) +
-  geom_pointrange() + facet_wrap('par', scales='free') + geom_hline(yintercept=0)
 
 x <- test$sd.par$par
 
-add.unique.names <- function(x){
-  as.vector(unlist(llply(unique(x), function(y){
-  z <- x[x %in% y]
-  if(length(z)>1) z <- paste0(z,"_", seq_along(z))
-  z})))
-}
   test$sd.par$par2 <- x2
 
 
