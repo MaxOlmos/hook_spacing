@@ -28,6 +28,14 @@ effective.skates <- function(hooks.per.skate, hook.spacing, skates=1){
     (skates*hooks.per.skate)*1.52*(1-exp(-.06*hook.spacing))/100
 }
 effective.skates(100, 18)               # doesn't quite match up due to rounding
+## Forces elements of x to be unique by adding number to any duplicated
+## entries
+add.unique.names <- function(x){
+  as.vector(unlist(llply(unique(x), function(y){
+  z <- x[x %in% y]
+  if(length(z)>1) z <- paste0(z,"_", seq_along(z))
+  z})))
+}
 
 
 ## Create mesh from real data
@@ -83,7 +91,7 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
                M2=spde$spde$param.inla$M2)
   Params <- list(intercept=5,
                  beta_year=rep(0, length(levels(df$year))),
-                 beta_geartype= c(.17, .3, .3),
+                 beta_geartype= c(0,0, 0),
                  beta_month=rep(0, length(levels(df$month))),
                  beta_hooksize=rep(0, length(levels(df$hooksize))),
                  beta_depth=0,beta_depth2=0, beta_spacing=0, lambda=1,
@@ -103,19 +111,19 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
 
   ## Need to fix first level of each factor at 0 so they are
   ## identifiable. Get merged into the intercept. I.e., contrasts in R.
-  ##  list.factors <- list(
-  ##    beta_year=factor(c(NA, 1:(length(levels(df$year))-1))),
-  ##   beta_geartype=factor(c(NA, 1:(length(levels(df$geartype))-1))),
-  ##   beta_month=factor(c(NA, 1:(length(levels(df$month))-1))),
-  ##   beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))),
-  ## lambda=factor(NA))
+   list.factors <- list(
+     beta_year=factor(c(NA, 1:(length(levels(df$year))-1))),
+    beta_geartype=factor(c(NA, 1:(length(levels(df$geartype))-1))),
+    beta_month=factor(c(NA, 1:(length(levels(df$month))-1))),
+    beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))),
+  lambda=factor(NA))
     ## OR turn them totally off
-    list.factors <- list(
-    lambda=factor(NA),
-    beta_year=factor(rep(NA, length(levels(df$year)))),
-    beta_geartype=factor(rep(NA, length(levels(df$geartype)))),
-    beta_month=factor(rep(NA, length(levels(df$month)))),
-    beta_hooksize=factor(rep(NA, length(levels(df$hooksize)))))
+    ## list.factors <- list(
+    ## lambda=factor(NA),
+    ## beta_year=factor(rep(NA, length(levels(df$year)))),
+    ## beta_geartype=factor(rep(NA, length(levels(df$geartype)))),
+    ## beta_month=factor(rep(NA, length(levels(df$month)))),
+    ## beta_hooksize=factor(rep(NA, length(levels(df$hooksize)))))
 
   ## Turn off parameters for spacing depending on the form
   if(form==1) {
@@ -164,6 +172,7 @@ run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
       table <- paste0(round(value,3), ' (',round(lwr,3), '-', round(upr,3),')')
     })
     sd.df$par <- as.character(sd.df$par)
+    sd.df$par2 <- add.unique.names(sd.df$par)
     sd.spacing <- sd.df[grep('spacing_std', x=sd.df$par),]
     sd.spacing$spacing <- seq_along(sd.spacing$par)
     sd.cpue <- sd.df[grep('cph_t', x=sd.df$par),]
@@ -172,7 +181,8 @@ run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
     runtime <- as.numeric(difftime(Sys.time(),start, units='mins'))
     x <- list(model=model, n_knots=n_knots, form=form, likelihood=likelihood,
          runtime=runtime, report=report.temp, sd.spacing=sd.spacing,
-         sd.par=sd.par, Obj=Obj, Opt=Opt)
+         sd.par=sd.par, Obj=Obj, Opt=Opt, Inits=Inputs$Params,
+         Map=Inputs$Map, Random=Inputs$Random)
     return(x)
 }
 

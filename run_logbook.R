@@ -12,9 +12,30 @@ dyn.load( dynlib(Version))
 ### ------------------------------------------------------------
 ## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
 ## and full spatio-temporal (ST). Form=1 implies a random walk on hook
-## spacing, form=2 is the HS model.
+## spacing, form=2 is the parametric HS model.
 
-test <- run.logbook(n_knots=50, model='ST', form=2, trace=10)
+st <- run.logbook(n_knots=50, model='ST', form=2, trace=10)
+ns <- run.logbook(n_knots=50, model='NS', form=2, trace=10)
+test <- rbind.fill(st$sd.par, ns$sd.par)
+nrow(test)
+test$model <- rep(c("ST", "NS"), each=nrow(test)/2)
+
+test$sd.par$table
+ggplot(st$sd.spacing, aes(spacing, value, ymin=lwr, ymax=upr)) +
+  geom_pointrange()
+ggplot(test, aes(par2, value, ymin=lwr, ymax=upr)) +
+  geom_pointrange() + facet_wrap('par', scales='free') + geom_hline(yintercept=0)
+
+x <- test$sd.par$par
+
+add.unique.names <- function(x){
+  as.vector(unlist(llply(unique(x), function(y){
+  z <- x[x %in% y]
+  if(length(z)>1) z <- paste0(z,"_", seq_along(z))
+  z})))
+}
+  test$sd.par$par2 <- x2
+
 
 ## Run ST model with and without the HS formula with high resolution
 for(form in 1:2){
