@@ -167,11 +167,21 @@ Type objective_function<Type>::operator() ()
     ADREPORT(max_ehook);
     ADREPORT(beta_spacing);
     ADREPORT(lambda);
+  } else {
+      ADREPORT(ln_spacing);	  // Hook spacing effect
   }
-  ADREPORT(Sigma);
-  ADREPORT(Range);
-  ADREPORT(SigmaE);
-  ADREPORT(SigmaO);
+  ADREPORT(intercept);		   // global mean log catch
+  ADREPORT(beta_year);	   // year effect
+  ADREPORT(beta_geartype); // geartype effect
+  ADREPORT(beta_month);	   // month effect
+  ADREPORT(beta_hooksize); // hooksize effect
+  ADREPORT(beta_depth);	   // depth effect
+  // Derived variance components
+  ADREPORT(Sigma);	   	// observation
+  ADREPORT(Range);		// geostatistical range
+  ADREPORT(SigmaE);		// space
+  ADREPORT(SigmaO);		// spatiotemporal
+  // Spacing and CPUE calcs
   ADREPORT(spacing_std);
   ADREPORT(cph_t);
   REPORT(resids);

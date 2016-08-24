@@ -157,14 +157,22 @@ run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
     report.temp <- Obj$report();
     sd.temp <- sdreport(Obj)
     sd.df <- data.frame(par=names(sd.temp$value), value=sd.temp$value, sd=sd.temp$sd)
+    sd.df <- within(sd.df,{
+      upr <- value+1.96*sd
+      lwr <- value-1.96*sd
+      table <- paste0(round(value,3), ' (',round(lwr,3), '-', round(upr,3),')')
+    })
     sd.df$par <- as.character(sd.df$par)
     sd.spacing <- sd.df[grep('spacing_std', x=sd.df$par),]
     sd.spacing$spacing <- seq_along(sd.spacing$par)
-    sd.par <- sd.df[-grep('spacing_std', x=sd.df$par),]
+    sd.cpue <- sd.df[grep('cph_t', x=sd.df$par),]
+    sd.cpue$par <- paste0('cpue_', 1:n_years)
+    sd.par <- sd.df[-grep('spacing_std|cph_t', x=sd.df$par),]
     runtime <- as.numeric(difftime(Sys.time(),start, units='mins'))
-    list(model=model, n_knots=n_knots, form=form, likelihood=likelihood,
+    x <- list(model=model, n_knots=n_knots, form=form, likelihood=likelihood,
          runtime=runtime, report=report.temp, sd.spacing=sd.spacing,
          sd.par=sd.par, Obj=Obj, Opt=Opt)
+    return(x)
 }
 
 

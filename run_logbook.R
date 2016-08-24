@@ -9,15 +9,12 @@ file.remove('models/spatiotemporal_cpue_spacing.o', 'models/spatiotemporal_cpue_
 compile( paste0(Version,".cpp"))
 dyn.load( dynlib(Version))
 
-nu <- exp(1.5)*df$hooks*(1-exp(-.08*df$spacing))
-CV <- .1
-y <- rgamma(nrow(df), shape=1/CV^2, scale=nu*CV^2)
-df$catch <- y
-
 ### ------------------------------------------------------------
 ## Step 2. Run models. Models= no spatial effect (NS), spatial model (S)
 ## and full spatio-temporal (ST). Form=1 implies a random walk on hook
 ## spacing, form=2 is the HS model.
+
+
 
 ## Run ST model with and without the HS formula with high resolution
 for(form in 1:2){
