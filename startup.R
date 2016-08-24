@@ -86,7 +86,7 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
                  beta_geartype= c(.17, .3, .3),
                  beta_month=rep(0, length(levels(df$month))),
                  beta_hooksize=rep(0, length(levels(df$hooksize))),
-                 beta_depth=0, beta_spacing=0, lambda=1,
+                 beta_depth=0,beta_depth2=0, beta_spacing=0, lambda=1,
                  ln_tau_O=-.6, ln_tau_E=.25,
                  ln_kappa=.3,  ln_obs=-.2, ln_spacing=0,
                  spacing_devs=rep(0, length=Data$n_ft),
@@ -103,13 +103,14 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
 
   ## Need to fix first level of each factor at 0 so they are
   ## identifiable. Get merged into the intercept. I.e., contrasts in R.
-  list.factors <- list(
-    ##  beta_year=factor(c(NA, 1:(length(levels(df$year))-1))),
-    ## beta_geartype=factor(c(NA, 1:(length(levels(df$geartype))-1))),
-    ## beta_month=factor(c(NA, 1:(length(levels(df$month))-1))),
-    ## beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))))
+  ##  list.factors <- list(
+  ##    beta_year=factor(c(NA, 1:(length(levels(df$year))-1))),
+  ##   beta_geartype=factor(c(NA, 1:(length(levels(df$geartype))-1))),
+  ##   beta_month=factor(c(NA, 1:(length(levels(df$month))-1))),
+  ##   beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))),
+  ## lambda=factor(NA))
     ## OR turn them totally off
-    ## list.factors <- list(
+    list.factors <- list(
     lambda=factor(NA),
     beta_year=factor(rep(NA, length(levels(df$year)))),
     beta_geartype=factor(rep(NA, length(levels(df$geartype)))),
@@ -175,7 +176,7 @@ run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
     return(x)
 }
 
-
+## !!!THIS IS NOT USED AND OUTDATED AS OF 8/24/2016!!!!
 simulate.data <- function(loc_xy, loc_centers, params, n_years, SD_obs=.5,
                           Scale=1, SD_omega=1.5, SD_epsilon=.2 ){
     ## I'm passing locations into this instead of randomly generating them

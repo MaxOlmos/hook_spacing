@@ -53,7 +53,8 @@ Type objective_function<Type>::operator() ()
   PARAMETER_VECTOR(beta_geartype); // geartype effect
   PARAMETER_VECTOR(beta_month);	   // month effect
   PARAMETER_VECTOR(beta_hooksize); // hooksize effect
-  PARAMETER(beta_depth);	   // depth effect
+  PARAMETER(beta_depth);	   // linear depth effect
+  PARAMETER(beta_depth2);	   // quadratic depth effect
   PARAMETER(beta_spacing);	   // from H&S formula
   PARAMETER(lambda);		   // from H&S formula
   //PARAMETER(alpha_spacing);	   // from H&S formula
@@ -109,13 +110,15 @@ Type objective_function<Type>::operator() ()
     mu_i(i) = intercept +
       spacing(spacing_i(i))+ beta_year(year_i(i)) +
       beta_month(month_i(i)) + beta_geartype(geartype_i(i)) +
-      beta_hooksize(hooksize_i(i)) + beta_depth*depth_i(i) +
+      beta_hooksize(hooksize_i(i)) +
+      beta_depth*depth_i(i) + beta_depth2*depth_i(i)*depth_i(i) +
       omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i));
     if(form==2)
       mu_i(i) = spacing(spacing_i(i))*
 	(intercept + beta_year(year_i(i)) +
 	 beta_month(month_i(i)) + beta_geartype(geartype_i(i)) +
-	 beta_hooksize(hooksize_i(i)) + beta_depth*depth_i(i) +
+	 beta_hooksize(hooksize_i(i)) +
+	 beta_depth*depth_i(i) + beta_depth2*depth_i(i)*depth_i(i) +
 	 omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i)));
   }
 
@@ -175,7 +178,8 @@ Type objective_function<Type>::operator() ()
   ADREPORT(beta_geartype); // geartype effect
   ADREPORT(beta_month);	   // month effect
   ADREPORT(beta_hooksize); // hooksize effect
-  ADREPORT(beta_depth);	   // depth effect
+  ADREPORT(beta_depth);	   // linear depth effect
+  ADREPORT(beta_depth2);   // quadratic depth effect
   // Derived variance components
   ADREPORT(Sigma);	   	// observation
   ADREPORT(Range);		// geostatistical range

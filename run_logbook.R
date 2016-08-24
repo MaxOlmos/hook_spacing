@@ -14,7 +14,7 @@ dyn.load( dynlib(Version))
 ## and full spatio-temporal (ST). Form=1 implies a random walk on hook
 ## spacing, form=2 is the HS model.
 
-
+test <- run.logbook(n_knots=50, model='ST', form=2, trace=10)
 
 ## Run ST model with and without the HS formula with high resolution
 for(form in 1:2){
