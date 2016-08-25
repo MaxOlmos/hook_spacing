@@ -29,12 +29,36 @@ effective.skates <- function(hooks.per.skate, hook.spacing, skates=1){
 }
 effective.skates(100, 18)               # doesn't quite match up due to rounding
 ## Forces elements of x to be unique by adding number to any duplicated
-## entries
+## entries. Helper function for plotting functions below
 add.unique.names <- function(x){
   as.vector(unlist(llply(unique(x), function(y){
   z <- x[x %in% y]
   if(length(z)>1) z <- paste0(z,"_", seq_along(z))
   z})))
+}
+
+## Pass it a list of fits from run.logbook, and plots parameter comparisons
+## between the two
+plot.parameter.comparison <- function(fits, level.name, levels){
+  test <- ldply(fits, function(x) cbind(level=level.name, x$sd.par))
+  test[,level.name] <- rep(levels, each=nrow(test)/length(levels))
+  test$par3 <- as.numeric(as.factor(paste0(test$par2, "_", test[,level.name])))
+  g <- ggplot(test, aes_string('par3', 'value', color=level.name,
+  group=level.name, ymin='lwr', ymax='upr')) +
+    geom_linerange(lwd=1.5) + facet_wrap('par', scales='free') +
+    geom_hline(yintercept=0)
+  return(g)
+}
+## Same as above but for spacing effect. Currently broken.
+plot.spacing.comparison <- function(fits, level.name, levels){
+  stop('broken because spacing not always the same length')
+  test <- ldply(fits, function(x) cbind(level=level.name, x$sd.spacing))
+  test[,level.name] <- rep(levels, each=nrow(test)/length(levels))
+  test$par3 <- as.numeric(as.factor(paste0(test$par2, "_", test[,level.name])))
+  g <- ggplot(test, aes(par3, value, color=model, group=model, ymin=lwr, ymax=upr)) +
+    geom_linerange(lwd=1.5) + facet_wrap('par', scales='free') +
+    geom_hline(yintercept=0)
+  return(g)
 }
 
 

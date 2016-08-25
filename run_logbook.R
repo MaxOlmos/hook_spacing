@@ -40,41 +40,6 @@ plot.parameter.comparison(list(d1,d2),
      level.name='data', levels=c('Filtered', 'Unfiltered'))
 ggsave('plots/par_comparison_data.png')
 
-
-plot.parameter.comparison <- function(fits, level.name, levels){
-  test <- ldply(fits, function(x) cbind(level=level.name, x$sd.par))
-  test[,level.name] <- rep(levels, each=nrow(test)/length(levels))
-  test$par3 <- as.numeric(as.factor(paste0(test$par2, "_", test[,level.name])))
-  g <- ggplot(test, aes_string('par3', 'value', color=level.name,
-  group=level.name, ymin='lwr', ymax='upr')) +
-    geom_linerange(lwd=1.5) + facet_wrap('par', scales='free') +
-    geom_hline(yintercept=0)
-  return(g)
-}
-
-plot.spacing.comparison <- function(fits, level.name, levels){
-  test <- ldply(fits, function(x) cbind(level=level.name, x$sd.spacing))
-  test[,level.name] <- rep(levels, each=nrow(test)/length(levels))
-  test$par3 <- as.numeric(as.factor(paste0(test$par2, "_", test[,level.name])))
-  g <- ggplot(test, aes(par3, value, color=model, group=model, ymin=lwr, ymax=upr)) +
-    geom_linerange(lwd=1.5) + facet_wrap('par', scales='free') +
-    geom_hline(yintercept=0)
-  return(g)
-}
-
-ggplot(test, aes(par2, value, group=model, ymin=lwr, ymax=upr)) +
-  geom_linerange() + facet_wrap('par', scales='free') + geom_hline(yintercept=0)
-
-
-test$sd.par$table
-ggplot(st$sd.spacing, aes(spacing, value, ymin=lwr, ymax=upr)) +
-  geom_pointrange()
-
-x <- test$sd.par$par
-
-  test$sd.par$par2 <- x2
-
-
 ## Run ST model with and without the HS formula with high resolution
 for(form in 1:2){
     temp <- run.logbook(n_knots=400, model='ST', form=form, trace=10)
