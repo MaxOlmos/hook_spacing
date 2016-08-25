@@ -1,8 +1,7 @@
 .Rhistory
-data.Rdata
 data.RDS
-ldLog.RData
+data_unfiltered.RDS
 *.dll
 *.o
 hs_data.csv
-ldlog.Rdata
+
