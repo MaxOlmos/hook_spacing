@@ -1,9 +1,10 @@
 ### ------------------------------------------------------------
 ## Step 1: read in and prep the data for this model
-df.unfiltered <- readRDS(file='data/data.RDS')
-df.filtered <- df[-(1:5000),]
-n_years <- length(unique(df$year))
-df$spacing <- round(df$spacing)
+df.unfiltered <- readRDS(file='data/data_unfiltered.RDS')
+df.unfiltered$spacing <- round(df.unfiltered$spacing)
+df.filtered <- readRDS(file='data/data.RDS')
+df.filtered$spacing <- round(df.filtered$spacing)
+n_years <- length(unique(df.filtered$year))
 Version <- "models/spatiotemporal_cpue_spacing"
 dyn.unload( dynlib(Version))
 file.remove('models/spatiotemporal_cpue_spacing.o', 'models/spatiotemporal_cpue_spacing.dll')
@@ -16,29 +17,29 @@ dyn.load( dynlib(Version))
 ## spacing, form=2 is the parametric HS model.
 
 ### Explore effects of key dimensions.
+knots <- 500
 ## Spatial effect
-ns <- run.logbook(n_knots=50, model='NS', form=2, trace=10)
-s <- run.logbook(n_knots=50, model='S', form=2, trace=10)
-st <- run.logbook(n_knots=50, model='ST', form=2, trace=10)
+ns <- run.logbook(n_knots=knots, model='NS', form=2, trace=10)
+s <- run.logbook(n_knots=knots, model='S', form=2, trace=10)
+st <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
 g <- plot.parameter.comparison(list(ns,s,st),
      level.name='model', levels=c('NS', 'S', 'ST'))
 ggsave('plots/par_comparison_model.png')
-
 ## Spacing form
-st1 <- run.logbook(n_knots=50, model='ST', form=1, trace=10)
-st2 <- run.logbook(n_knots=50, model='ST', form=2, trace=10)
+st1 <- run.logbook(n_knots=knots, model='ST', form=1, trace=10)
+st2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
 plot.parameter.comparison(list(st1, st2),
      level.name='model', levels=c('Nonparametric', 'Hamley & Skud'))
 ggsave('plots/par_comparison_form.png')
-
 ## Data filtering
 df <- df.filtered
-d1 <- run.logbook(n_knots=50, model='ST', form=2, trace=10)
+d1 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
 df <- df.unfiltered
-d2 <- run.logbook(n_knots=50, model='ST', form=2, trace=10)
+d2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
 plot.parameter.comparison(list(d1,d2),
      level.name='data', levels=c('Filtered', 'Unfiltered'))
 ggsave('plots/par_comparison_data.png')
+
 
 plot.parameter.comparison <- function(fits, level.name, levels){
   test <- ldply(fits, function(x) cbind(level=level.name, x$sd.par))
