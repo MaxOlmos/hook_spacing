@@ -18,6 +18,16 @@ dyn.load( dynlib(Version))
 
 ### Explore effects of key dimensions.
 knots <- 500
+## Data filtering
+df <- df.filtered
+d1 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
+df <- df.unfiltered
+d2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
+plot.parameter.comparison(list(d1,d2),
+     level.name='data', levels=c('Filtered', 'Unfiltered'))
+ggsave('plots/par_comparison_data.png')
+df <- df.filtered
+rm(df.unfiltered, df.filtered)
 ## Spatial effect
 ns <- run.logbook(n_knots=knots, model='NS', form=2, trace=10)
 s <- run.logbook(n_knots=knots, model='S', form=2, trace=10)
@@ -31,14 +41,6 @@ st2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
 plot.parameter.comparison(list(st1, st2),
      level.name='model', levels=c('Nonparametric', 'Hamley & Skud'))
 ggsave('plots/par_comparison_form.png')
-## Data filtering
-df <- df.filtered
-d1 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
-df <- df.unfiltered
-d2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
-plot.parameter.comparison(list(d1,d2),
-     level.name='data', levels=c('Filtered', 'Unfiltered'))
-ggsave('plots/par_comparison_data.png')
 
 ## Run ST model with and without the HS formula with high resolution
 for(form in 1:2){
