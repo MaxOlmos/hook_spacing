@@ -89,7 +89,7 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
                depth_i=df$depth,
                M0=spde$spde$param.inla$M0, M1=spde$spde$param.inla$M1,
                M2=spde$spde$param.inla$M2)
-  Params <- list(intercept=5,
+  Params <- list(intercept=0,
                  beta_year=rep(0, length(levels(df$year))),
                  beta_geartype= c(0,0, 0),
                  beta_month=rep(0, length(levels(df$month))),
@@ -160,6 +160,8 @@ run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
     upper <- rep(Inf,  len=length(unlist(Inputs$Params)))
     names(upper) <- names(lower) <- names(unlist(Inputs$Params))
     lower['gamma'] <- 0; upper['gamma'] <- 1
+    Obj$fn()
+
     Opt <- nlminb(start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
                   lower=lower, upper=upper,
                   control=list(trace=trace, eval.max=1e4, iter.max=1e4 ))
