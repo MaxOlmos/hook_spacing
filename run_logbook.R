@@ -42,6 +42,10 @@ plot.parameter.comparison(list(st1, st2),
      level.name='model', levels=c('Nonparametric', 'Hamley & Skud'))
 ggsave('plots/par_comparison_form.png')
 
+v0 <- run.logbook(n_knots=knots, model='NS', form=1, vessel_effect=FALSE, trace=10)
+
+x <- make.inputs(n_knots=knots, model='NS', form=1, vessel_effect=FALSE)
+
 ## Run ST model with and without the HS formula with high resolution
 for(form in 1:2){
     temp <- run.logbook(n_knots=400, model='ST', form=form, trace=10)

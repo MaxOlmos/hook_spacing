@@ -30,12 +30,14 @@ Type objective_function<Type>::operator() ()
   DATA_FACTOR(s_i);  // Random effect index for observation i
   DATA_INTEGER(n_t); // number of years
   DATA_INTEGER(n_ft); // number of spacings.. 1:n_ft, with ft(0)=0 assumed
+  DATA_INTEGER(n_v);  // number of vessels
   // Indices for factors
   DATA_FACTOR(spacing_i);
   DATA_FACTOR(year_i);
   DATA_FACTOR(geartype_i);
   DATA_FACTOR(month_i);
   DATA_FACTOR(hooksize_i);
+  DATA_FACTOR(vessel_i);
   // DATA_FACTOR(statarea_i);
   // vectors of real data
   DATA_VECTOR(depth_i); // depth covariate
@@ -64,11 +66,13 @@ Type objective_function<Type>::operator() ()
   PARAMETER(ln_kappa);		  // decorrelation distance (kind of)
   PARAMETER(ln_obs);		  // Observation variance
   PARAMETER(ln_spacing);	  // Hook spacing effect
+  PARAMETER(ln_vessel);		  // vessel effect
   // Random effects
   PARAMETER_VECTOR(spacing_devs); // hook spacing; n_ft length
-  PARAMETER_VECTOR(omega_s);	  // spatial effects
+  PARAMETER_VECTOR(vessel_v);	  // vessel effect; n_v length
+  PARAMETER_VECTOR(omega_s);	  // spatial effects; n_s length
   // This is a matrix of (centers by years)
-  PARAMETER_ARRAY(epsilon_st);	// spatio-temporal effects
+  PARAMETER_ARRAY(epsilon_st);	// spatio-temporal effects; n_s by n_t matrix
 
   // Objective function and bookkeeping
   using namespace density;
@@ -77,6 +81,7 @@ Type objective_function<Type>::operator() ()
   Type nll_omega=0;		// spatial
   Type nll_epsilon=0;		// spatio-temporal
   Type nll_spacing=0;		// RW on hook spacing
+  Type nll_vessel=0;		// vessel effect
 
   // Derived quantities
   Type Range = sqrt(8) / exp( ln_kappa );
@@ -119,6 +124,7 @@ Type objective_function<Type>::operator() ()
 	 beta_month(month_i(i)) + beta_geartype(geartype_i(i)) +
 	 beta_hooksize(hooksize_i(i)) +
 	 beta_depth*depth_i(i) + beta_depth2*depth_i(i)*depth_i(i) +
+	 vessel_v(vessel_i(i))+
 	 omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i)));
   }
 
@@ -132,6 +138,10 @@ Type objective_function<Type>::operator() ()
   // hook spacing effects
   for(int ft=0; ft<n_ft; ft++)
     nll_spacing -= dnorm(Type(0.0), spacing_devs(ft),exp(ln_spacing), true);
+
+  // vessel effects
+  for(int v=0; v<n_v; v++)
+    nll_vessel -= dnorm(Type(0.0), vessel_v(v),exp(ln_vessel), true);
 
   // Probability of the data, given random effects
   for( int i=0; i<n_i; i++){
@@ -161,6 +171,7 @@ Type objective_function<Type>::operator() ()
   REPORT(nll_omega);
   REPORT(nll_epsilon);
   REPORT(nll_spacing);
+  REPORT(nll_vessel);
   REPORT(intercept);
   REPORT(beta_depth);
   REPORT(spacing_std);
@@ -180,8 +191,11 @@ Type objective_function<Type>::operator() ()
   ADREPORT(beta_hooksize); // hooksize effect
   ADREPORT(beta_depth);	   // linear depth effect
   ADREPORT(beta_depth2);   // quadratic depth effect
-  // Derived variance components
+  // random effect variances
   ADREPORT(Sigma);	   	// observation
+  Type Sigma_vessel=exp(ln_vessel);
+  ADREPORT(Sigma_vessel);
+  // Derived geospatial components
   ADREPORT(Range);		// geostatistical range
   ADREPORT(SigmaE);		// space
   ADREPORT(SigmaO);		// spatiotemporal

@@ -83,7 +83,7 @@ create.spde <- function(n_knots, make.plot=FALSE){
   return(list(mesh=mesh, spde=spde, cluster=knots$cluster))
 }
 
-make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, ...){
+make.inputs <- function(n_knots, model, form, vessel_effect, likelihood=1, n_points_area=1e4, ...){
   spde <- create.spde(n_knots=n_knots)
   ## Calculate area of each SPDE grid by generating random points and
   ## seeing which proportion fall into each grid. This converges to area as
@@ -104,12 +104,14 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
                hooks_i=df$hooks,
                n_t=length(unique(df$year)),
                n_ft=max(df$spacing)+5,
+               n_v=length(unique(Data$vessel)), # no. vessels
                s_i=spde$cluster-1,
                spacing_i=df$spacing,
                year_i=as.numeric(df$year)-1,
                month_i=as.numeric(df$month)-1,
                hooksize_i=as.numeric(df$hooksize)-1,
                geartype_i=as.numeric(df$geartype)-1,
+               vessel_i=as.numeric(df$vessel)-1,
                depth_i=df$depth,
                M0=spde$spde$param.inla$M0, M1=spde$spde$param.inla$M1,
                M2=spde$spde$param.inla$M2)
@@ -121,17 +123,22 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
                  beta_depth=0,beta_depth2=0, beta_spacing=0, lambda=1,
                  ln_tau_O=-.6, ln_tau_E=.25,
                  ln_kappa=.3,  ln_obs=-.2, ln_spacing=0,
+                 ln_vessel=.1,
                  spacing_devs=rep(0, length=Data$n_ft),
+                 vessel_v=rep(0, length=length(unique(Data$vessel))),
                  omega_s=rep(0,spde$mesh$n),
                  epsilon_st=matrix(0,nrow=nrow(Data$M0),ncol=Data$n_t))
+
+  ## If vessel effect turned on, set it to random
+  v <- if(vessel_effect) 'vessel_v' else NULL
   if(form==1)
-    Random <- list(NS=c('spacing_devs'),
-                   S=c('spacing_devs', 'omega_s'),
-                   ST=c("omega_s", "epsilon_st", "spacing_devs"))
+    Random <- list(NS=c('spacing_devs', v),
+                   S=c('spacing_devs', 'omega_s', v),
+                   ST=c("omega_s", "epsilon_st", "spacing_devs",v))
   if(form==2) ## turn off spacing RE if using H&S formula
-    Random <- list(NS=NULL,
-                   S=c('omega_s'),
-                   ST=c("omega_s", "epsilon_st"))
+    Random <- list(NS=v,
+                   S=c('omega_s',v),
+                   ST=c("omega_s", "epsilon_st",v))
 
   ## Need to fix first level of each factor at 0 so they are
   ## identifiable. Get merged into the intercept. I.e., contrasts in R.
@@ -158,6 +165,8 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
     xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
                ln_spacing=factor(NA))
   }
+  ## add vessels if needed
+  if(!vessel_effect) xx <- c(xx, list(vessel_v=factor(rep(NA, length=Data$n_v))), list(ln_vessel=factor(NA)))
   Map <- list(
     ## Turn off spatial and spatio-temporal effects
     NS=c(list.factors, xx, list(
@@ -172,10 +181,10 @@ make.inputs <- function(n_knots, model, form, likelihood=1, n_points_area=1e4, .
   return(list(Data=Data, Params=Params, Random=Random[[model]], Map=Map[[model]]))
 }
 
-run.logbook <- function(n_knots, model, form, likelihood=1, trace=10){
+run.logbook <- function(n_knots, model, form, vessel_effect, likelihood=1, trace=10){
     start <- Sys.time()
     Inputs <- make.inputs(n_knots=n_knots, model=model, form=form,
-                          likelihood=likelihood)
+                          vessel_effect=vessel_effect, likelihood=likelihood)
     Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                      random=Inputs$Random, map=Inputs$Map)
     Obj$env$beSilent()
