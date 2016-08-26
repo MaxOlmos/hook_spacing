@@ -161,7 +161,7 @@ Type objective_function<Type>::operator() ()
 		   beta_geartype(0) + beta_hooksize(0) + beta_depth*80);
 
   // Reporting
-  Type jnll = nll_likelihood+nll_omega+nll_epsilon+nll_spacing;
+  Type jnll = nll_likelihood+nll_omega+nll_epsilon+nll_spacing +nll_vessel;
   vector<Type> resids; // pearson residuals: resid/var
   if(likelihood==1) resids = (log(hooks_i) +mu_i-log(catch_i))/Sigma;
   if(likelihood==2) resids = (hooks_i*exp(mu_i)-catch_i)/

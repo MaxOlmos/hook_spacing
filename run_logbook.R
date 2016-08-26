@@ -42,9 +42,21 @@ plot.parameter.comparison(list(st1, st2),
      level.name='model', levels=c('Nonparametric', 'Hamley & Skud'))
 ggsave('plots/par_comparison_form.png')
 
-v0 <- run.logbook(n_knots=knots, model='NS', form=1, vessel_effect=FALSE, trace=10)
+knots <- 50
+v0 <- run.logbook(n_knots=knots, model='ST', form=2, vessel_effect=FALSE, trace=10)
+v1 <- run.logbook(n_knots=knots, model='ST', form=2, vessel_effect=TRUE, trace=10)
+plot.parameter.comparison(list(v0, v1),
+     level.name='vessel', levels=c('No Vessels', 'Vessel Effect'))
+ggsave('plots/par_comparison_vessel.png')
+png('plots/vessel_qqplots.png', res=500, units='in', width=14, height=8)
+par(mfrow=c(1,2))
+with(v0$report, {qqnorm(resids, main='No vessel effect'); qqline(resids)})
+with(v1$report, {qqnorm(resids, main='Vessel effect'); qqline(resids)})
+dev.off()
+z
 
-x <- make.inputs(n_knots=knots, model='NS', form=1, vessel_effect=FALSE)
+
+
 
 ## Run ST model with and without the HS formula with high resolution
 for(form in 1:2){
