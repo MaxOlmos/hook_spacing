@@ -83,7 +83,8 @@ create.spde <- function(n_knots, make.plot=FALSE){
   return(list(mesh=mesh, spde=spde, cluster=knots$cluster))
 }
 
-make.inputs <- function(n_knots, model, form, vessel_effect, likelihood=1, n_points_area=1e4, ...){
+make.inputs <- function(n_knots, model, form,
+  likelihood=1, vessel_effect=FALSE,  n_points_area=1e4, ...){
   spde <- create.spde(n_knots=n_knots)
   ## Calculate area of each SPDE grid by generating random points and
   ## seeing which proportion fall into each grid. This converges to area as
@@ -104,7 +105,7 @@ make.inputs <- function(n_knots, model, form, vessel_effect, likelihood=1, n_poi
                hooks_i=df$hooks,
                n_t=length(unique(df$year)),
                n_ft=max(df$spacing)+5,
-               n_v=length(unique(Data$vessel)), # no. vessels
+               n_v=length(unique(df$vessel)), # no. vessels
                s_i=spde$cluster-1,
                spacing_i=df$spacing,
                year_i=as.numeric(df$year)-1,

@@ -17,8 +17,9 @@ dyn.load( dynlib(Version))
 ## spacing, form=2 is the parametric HS model.
 
 ### Explore effects of key dimensions.
-knots <- 500
+
 ## Data filtering
+knots <- 1000
 df <- df.filtered
 d1 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
 df <- df.unfiltered
@@ -28,13 +29,16 @@ plot.parameter.comparison(list(d1,d2),
 ggsave('plots/par_comparison_data.png')
 df <- df.filtered
 rm(df.unfiltered, df.filtered)
+
 ## Spatial effect
-ns <- run.logbook(n_knots=knots, model='NS', form=2, trace=10)
-s <- run.logbook(n_knots=knots, model='S', form=2, trace=10)
-st <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
+knots <- 1000
+ns <- run.logbook(n_knots=knots, model='NS', form=2, trace=10, vessel=TRUE)
+s <- run.logbook(n_knots=knots, model='S', form=2, trace=10, vessel=TRUE)
+st <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=TRUE)
 g <- plot.parameter.comparison(list(ns,s,st),
      level.name='model', levels=c('NS', 'S', 'ST'))
 ggsave('plots/par_comparison_model.png')
+
 ## Spacing form
 st1 <- run.logbook(n_knots=knots, model='ST', form=1, trace=10)
 st2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
