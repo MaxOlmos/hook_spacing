@@ -21,12 +21,12 @@ dyn.load( dynlib(Version))
 ## Data filtering
 knots <- 1000
 df <- df.filtered
-d1 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
+d1 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=FALSE)
 df <- df.unfiltered
-d2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
-plot.parameter.comparison(list(d1,d2),
+d2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=FALSE)
+g <- plot.parameter.comparison(list(d1,d2),
      level.name='data', levels=c('Filtered', 'Unfiltered'))
-ggsave('plots/par_comparison_data.png')
+ggsave('plots/par_comparison_data.png', g, width=8, height=6)
 df <- df.filtered
 rm(df.unfiltered, df.filtered)
 
