@@ -6,8 +6,7 @@ df.filtered <- readRDS(file='data/data.RDS')
 df.filtered$spacing <- round(df.filtered$spacing)
 n_years <- length(unique(df.filtered$year))
 Version <- "models/spatiotemporal_cpue_spacing"
-dyn.unload( dynlib(Version))
-file.remove('models/spatiotemporal_cpue_spacing.o', 'models/spatiotemporal_cpue_spacing.dll')
+clean.TMB.files(Version)
 compile( paste0(Version,".cpp"))
 dyn.load( dynlib(Version))
 

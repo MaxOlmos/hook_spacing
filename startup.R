@@ -28,6 +28,15 @@ effective.skates <- function(hooks.per.skate, hook.spacing, skates=1){
     (skates*hooks.per.skate)*1.52*(1-exp(-.06*hook.spacing))/100
 }
 effective.skates(100, 18)               # doesn't quite match up due to rounding
+## This function will clean up the compiled files from a TMB object. Useful
+## for development when need to ensure all change are propogated.
+clean.TMB.files <- function(model.path){
+  dyn.unload( dynlib(Version))
+  o <- paste0(model.path,'.o')
+  dll <- paste0(model.path, '.dll')
+  if(file.exists(o)) file.remove(o)
+  if(file.exists(dll)) file.remove(dll)
+}
 ## Forces elements of x to be unique by adding number to any duplicated
 ## entries. Helper function for plotting functions below
 add.unique.names <- function(x){
