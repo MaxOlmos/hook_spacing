@@ -12,9 +12,13 @@ dyn.load( dynlib(Version))
 
 ### ------------------------------------------------------------
 ## Step 2. Model exploration. Models= no spatial effect (NS), spatiaggl model (S)
-## and full spatio-temporal (ST). Form=1 implies a random walk on hook
+## and full spatio-temporal (ST). orm=1 implies a random walk on hook
 ## spacing, form=2 is the parametric HS model.
 
+## Temp code to explore CPUE calculations
+xx <- run.logbook(n_knots=100, model='S', form=2, trace=10, vessel=FALSE)
+ggplot(xx$sd.cpue, aes(year, value, ymax=upr, ymin=lwr)) + geom_pointrange()
+ggplot(xx$sd.density, aes(year, value, ymax=upr, ymin=lwr)) + geom_pointrange()
 ### Explore effects of key dimensions.
 
 ## Data filtering
@@ -170,3 +174,5 @@ dyn.unload( dynlib(Version))
 ##   facet_wrap('variable', scales='free_y') + geom_line()
 ## g
 ## ggsave('plots/results_by_resolution.png', g, width=ggwidth, height=ggheight)
+
+

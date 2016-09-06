@@ -29,6 +29,7 @@ Type objective_function<Type>::operator() ()
   DATA_INTEGER(space);	    // form of the spatial component; 0=NS, 1=S; 2=ST
   DATA_FACTOR(s_i);  // Random effect index for observation i
   DATA_INTEGER(n_t); // number of years
+  DATA_INTEGER(n_s); // number of sites (grids)
   DATA_INTEGER(n_ft); // number of spacings.. 1:n_ft, with ft(0)=0 assumed
   DATA_INTEGER(n_v);  // number of vessels
   // Indices for factors
@@ -43,6 +44,7 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(depth_i); // depth covariate
   DATA_VECTOR(catch_i);  // catch/hook (response variable); natural scale
   DATA_VECTOR(hooks_i); // the number of hooks
+  DATA_VECTOR(area_s); // area for each grid cell, for area-weighted CPUE
   // SPDE objects from R-INLA
   DATA_SPARSE_MATRIX(M0);
   DATA_SPARSE_MATRIX(M1);
@@ -154,18 +156,30 @@ Type objective_function<Type>::operator() ()
     dgamma(catch_i(i), 1/pow(Sigma,2), hooks_i(i)*exp(mu_i(i))*pow(Sigma,2), true);
   }
 
-  // Predict relative average catch rate over time
-  vector<Type> cph_t(n_t);
-  for( int t=0; t<n_t; t++)
+  // Calculate joint negative log likelihood
+  Type jnll = nll_likelihood+nll_omega+nll_epsilon+nll_spacing +nll_vessel;
+
+  //// Derived quantities
+  vector<Type> cph_t(n_t); // old way
+  for( int t=0; t<n_t; t++){
     cph_t(t)=  exp(intercept + beta_year(t) + beta_month(0) +
 		   beta_geartype(0) + beta_hooksize(0) + beta_depth*80);
+  }
+  // Area weighted approach to estimating trends in abundance
+  vector<Type> area_weighted_density_t(n_t); // one for each year
+  for( int t=0; t<n_t; t++){
+    area_weighted_density_t(t)=0;
+    for(int s=0; s<n_s; s++){
+      area_weighted_density_t(t)+=
+	area_s(s)*exp(intercept+beta_year(t)+ omega_s(s) + epsilon_st(s,t));
+    }
+  }
 
-  // Reporting
-  Type jnll = nll_likelihood+nll_omega+nll_epsilon+nll_spacing +nll_vessel;
   vector<Type> resids; // pearson residuals: resid/var
   if(likelihood==1) resids = (log(hooks_i) +mu_i-log(catch_i))/Sigma;
   if(likelihood==2) resids = (hooks_i*exp(mu_i)-catch_i)/
 		      (Sigma*hooks_i*exp(mu_i));
+  // Reporting
   // REPORT(jnll_comp);
   REPORT(nll_likelihood);
   REPORT(nll_omega);
@@ -202,6 +216,7 @@ Type objective_function<Type>::operator() ()
   // Spacing and CPUE calcs
   ADREPORT(spacing_std);
   ADREPORT(cph_t);
+  ADREPORT(area_weighted_density_t);
   REPORT(resids);
   return jnll;
 }

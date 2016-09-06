@@ -31,11 +31,11 @@ effective.skates(100, 18)               # doesn't quite match up due to rounding
 ## This function will clean up the compiled files from a TMB object. Useful
 ## for development when need to ensure all change are propogated.
 clean.TMB.files <- function(model.path){
-  dyn.unload( dynlib(Version))
   o <- paste0(model.path,'.o')
   dll <- paste0(model.path, '.dll')
-  if(file.exists(o)) file.remove(o)
-  if(file.exists(dll)) file.remove(dll)
+  if(is.loaded(dynlib(model.path))) dyn.unload( dynlib(model.path))
+  if(file.exists(dll)) trash <- file.remove(dll)
+  if(file.exists(o)) trash <- file.remove(o)
 }
 ## Forces elements of x to be unique by adding number to any duplicated
 ## entries. Helper function for plotting functions below
@@ -95,15 +95,22 @@ create.spde <- function(n_knots, make.plot=FALSE){
 make.inputs <- function(n_knots, model, form,
   likelihood=1, vessel_effect=FALSE,  n_points_area=1e4, ...){
   spde <- create.spde(n_knots=n_knots)
+  loc <- spde$mesh$loc[,1:2]
+  n_s <- nrow(loc)
   ## Calculate area of each SPDE grid by generating random points and
   ## seeing which proportion fall into each grid. This converges to area as
   ## the points go to Inf.
-  ## loc_extrapolation <-
-  ##   expand.grid(
-  ##     "longitude"=seq(min(df$longitude), max(df$latitude),length=n_points_area),
-  ##     "latitude"=seq(min(df$latitude), max(df$latitude),length=n_points_area))
-  ## NN_extrapolation <- nn2( data=SimList$loc_xy, query=loc_extrapolation, k=1 )
-  ## a_s <- table(factor(NN_extrapolation$nn.idx,levels=1:nrow(SimList$loc_xy))) / nrow(loc_extrapolation)
+  loc_extrapolation <-
+    expand.grid(
+      "longitude"=seq(min(df$longitude), max(df$longitude),length=n_points_area),
+      "latitude"=seq(min(df$latitude), max(df$latitude),length=n_points_area))
+  NN_extrapolation <- nn2( data=loc, query=loc_extrapolation, k=1 )
+  area_s <- table(factor(NN_extrapolation$nn.idx,levels=1:n_s)) / nrow(loc_extrapolation)
+  ## hist(area_s)
+  ## test <- cbind(loc_extrapolation, idx=NN_extrapolation$nn.idx)
+  ## ggplot(test, aes(longitude,latitude, color=idx)) + geom_point()
+
+
   ## Make inputs for all three models
   model <- match.arg(model, choices=c('NS', "S", "ST"))
   if(model=='NS') space <- 0
@@ -113,6 +120,7 @@ make.inputs <- function(n_knots, model, form,
                catch_i=df$catch,
                hooks_i=df$hooks,
                n_t=length(unique(df$year)),
+               n_s=n_s,
                n_ft=max(df$spacing)+5,
                n_v=length(unique(df$vessel)), # no. vessels
                s_i=spde$cluster-1,
@@ -123,6 +131,7 @@ make.inputs <- function(n_knots, model, form,
                geartype_i=as.numeric(df$geartype)-1,
                vessel_i=as.numeric(df$vessel)-1,
                depth_i=df$depth,
+               area_s=area_s,
                M0=spde$spde$param.inla$M0, M1=spde$spde$param.inla$M1,
                M2=spde$spde$param.inla$M2)
   Params <- list(intercept=2,
@@ -221,13 +230,15 @@ run.logbook <- function(n_knots, model, form, vessel_effect, likelihood=1, trace
     sd.spacing <- sd.df[grep('spacing_std', x=sd.df$par),]
     sd.spacing$spacing <- seq_along(sd.spacing$par)
     sd.cpue <- sd.df[grep('cph_t', x=sd.df$par),]
-    sd.cpue$par <- paste0('cpue_', 1:n_years)
-    sd.par <- sd.df[-grep('spacing_std|cph_t', x=sd.df$par),]
+    sd.density <- sd.df[grep('area_weighted_density_t', x=sd.df$par),]
+    sd.density$par <- paste0('density_', 1:n_years)
+    sd.cpue$year <- sd.density$year <- 1996:2015
+    sd.par <- sd.df[-grep('spacing_std|cph_t|area_weighted_density_t', x=sd.df$par),]
     runtime <- as.numeric(difftime(Sys.time(),start, units='mins'))
     x <- list(model=model, n_knots=n_knots, form=form, likelihood=likelihood,
          runtime=runtime, report=report.temp, sd.spacing=sd.spacing,
-         sd.par=sd.par, Obj=Obj, Opt=Opt, Inits=Inputs$Params,
-         Map=Inputs$Map, Random=Inputs$Random)
+         sd.density=sd.density, sd.cpue=sd.cpue, sd.par=sd.par, Obj=Obj, Opt=Opt,
+         Inits=Inputs$Params, Map=Inputs$Map, Random=Inputs$Random)
     return(x)
 }
 
