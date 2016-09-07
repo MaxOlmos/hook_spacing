@@ -2,9 +2,9 @@
 ## Step 1: read in and prep the data for this model
 df.unfiltered <- readRDS(file='data/data_unfiltered.RDS')
 df.unfiltered$spacing <- round(df.unfiltered$spacing)
-df.filtered <- readRDS(file='data/data.RDS')
-df.filtered$spacing <- round(df.filtered$spacing)
-n_years <- length(unique(df.filtered$year))
+df <- readRDS(file='data/data.RDS')
+df$spacing <- round(df$spacing)
+n_years <- length(unique(df$year))
 Version <- "models/spatiotemporal_cpue_spacing"
 clean.TMB.files(Version)
 compile( paste0(Version,".cpp"))
@@ -19,19 +19,21 @@ dyn.load( dynlib(Version))
 xx <- run.logbook(n_knots=100, model='S', form=2, trace=10, vessel=FALSE)
 ggplot(xx$sd.cpue, aes(year, value, ymax=upr, ymin=lwr)) + geom_pointrange()
 ggplot(xx$sd.density, aes(year, value, ymax=upr, ymin=lwr)) + geom_pointrange()
+
+
 ### Explore effects of key dimensions.
 
 ## Data filtering
 knots <- 1000
-df <- df.filtered
 d1 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=FALSE)
+df.temp <- df
 df <- df.unfiltered
 d2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=FALSE)
 g <- plot.parameter.comparison(list(d1,d2),
      level.name='data', levels=c('Filtered', 'Unfiltered'))
 ggsave('plots/par_comparison_data.png', g, width=8, height=6)
-df <- df.filtered
-rm(df.unfiltered, df.filtered)
+df <- df.temp
+rm(df.unfiltered, df.temp)
 
 ## Spatial effect
 knots <- 1000
@@ -49,6 +51,7 @@ plot.parameter.comparison(list(st1, st2),
      level.name='model', levels=c('Nonparametric', 'Hamley & Skud'))
 ggsave('plots/par_comparison_form.png')
 
+## Vessel effect
 knots <- 50
 v0 <- run.logbook(n_knots=knots, model='ST', form=2, vessel_effect=FALSE, trace=10)
 v1 <- run.logbook(n_knots=knots, model='ST', form=2, vessel_effect=TRUE, trace=10)
