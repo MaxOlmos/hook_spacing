@@ -49,8 +49,10 @@ add.unique.names <- function(x){
 ## Pass it a list of fits from run.logbook, and plots parameter comparisons
 ## between the two
 plot.parameter.comparison <- function(fits, level.name, levels){
-  test <- ldply(fits, function(x) cbind(level=level.name, x$sd.par))
-  test[,level.name] <- rep(levels, each=nrow(test)/length(levels))
+  test <- ldply(1:length(fits), function(x)
+    cbind(level.name=levels[x], fits[[x]]$sd.par))
+  test[,level.name] <- test$level.name
+  test$level.name <- NULL
   test$par3 <- as.numeric(as.factor(paste0(test$par2, "_", test[,level.name])))
   g <- ggplot(test, aes_string('par3', 'value', color=level.name,
   group=level.name, ymin='lwr', ymax='upr')) +
@@ -58,15 +60,16 @@ plot.parameter.comparison <- function(fits, level.name, levels){
     geom_hline(yintercept=0)
   return(g)
 }
+
 ## Same as above but for spacing effect. Currently broken.
 plot.spacing.comparison <- function(fits, level.name, levels){
-  stop('broken because spacing not always the same length')
-  test <- ldply(fits, function(x) cbind(level=level.name, x$sd.spacing))
-  test[,level.name] <- rep(levels, each=nrow(test)/length(levels))
-  test$par3 <- as.numeric(as.factor(paste0(test$par2, "_", test[,level.name])))
-  g <- ggplot(test, aes(par3, value, color=model, group=model, ymin=lwr, ymax=upr)) +
-    geom_linerange(lwd=1.5) + facet_wrap('par', scales='free') +
-    geom_hline(yintercept=0)
+  test <- ldply(1:length(fits), function(x)
+    cbind(level.name=levels[x], fits[[x]]$sd.spacing))
+  test[,level.name] <- test$level.name
+  test$level.name <- NULL
+  g <- ggplot(test, aes(spacing, value, color=model, group=model, ymin=lwr, ymax=upr)) +
+    geom_linerange(lwd=1.5) + facet_wrap(level.name) +
+   geom_vline(xintercept=18)
   return(g)
 }
 
