@@ -104,11 +104,6 @@ Type objective_function<Type>::operator() ()
     // Multiplicative form used by H&S.
     if(form==2) spacing(ft)=(1-pow(exp(-beta_spacing*(ft+1)), lambda));
   }
-  // Standardized effect of spacing
-  vector<Type> spacing_std(n_ft);
-  for(int ft=0; ft<n_ft; ft++)
-    // ft is again offset by 1 here, so ft=0 =>  spacing of 1ft
-    spacing_std(ft)=spacing(ft)/spacing(17);
 
   // The model predictions for each observation
   vector<Type> mu_i(n_i);
@@ -122,24 +117,22 @@ Type objective_function<Type>::operator() ()
 	 omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i));
   }
 
-  // Probability of random effects
-  if(space>0) nll_omega += SCALE( GMRF(Q), 1/exp(ln_tau_O) )( omega_s );
+  //// Probability of random effects
+  // Space and spatio-temporal
+  if(space>0) nll_omega += SCALE(GMRF(Q), 1/exp(ln_tau_O))(omega_s);
   if(space>1) {
-  for( int t=0; t<n_t; t++)	// spatio-temporal
-    nll_epsilon += SCALE( GMRF(Q), 1/exp(ln_tau_E) )( epsilon_st.col(t) );
+  for( int t=0; t<n_t; t++)	
+    nll_epsilon += SCALE(GMRF(Q), 1/exp(ln_tau_E))(epsilon_st.col(t));
   }
-
   // hook spacing effects
   for(int ft=0; ft<n_ft; ft++)
     nll_spacing -= dnorm(Type(0.0), spacing_devs(ft),exp(ln_spacing), true);
-
   // vessel effects
   for(int v=0; v<n_v; v++)
     nll_vessel -= dnorm(Type(0.0), vessel_v(v),exp(ln_vessel), true);
 
-  // Probability of the data, given random effects
+  //// Probability of the data, given random effects (likelihood)
   for( int i=0; i<n_i; i++){
-    // Probability of data conditional on random effects (likelihood)
     if(likelihood==1) // lognormal case; see top of file for function
       nll_likelihood -=
 	dlognorm(catch_i(i), log(hooks_i(i))+mu_i(i), exp(ln_obs), true);
@@ -152,7 +145,13 @@ Type objective_function<Type>::operator() ()
   Type jnll = nll_likelihood+nll_omega+nll_epsilon+nll_spacing +nll_vessel;
 
   //// Derived quantities
-  vector<Type> cph_t(n_t); // old way
+  // Standardized effect of spacing
+  vector<Type> spacing_std(n_ft);
+  for(int ft=0; ft<n_ft; ft++)
+    // ft is again offset by 1 here, so ft=0 =>  spacing of 1ft
+    spacing_std(ft)=spacing(ft)/spacing(17);
+  // catch per hook -- old way that doesn't make sense right now
+  vector<Type> cph_t(n_t); 
   for( int t=0; t<n_t; t++){
     cph_t(t)=  exp(intercept + beta_year(t) + beta_month(0) +
 		   beta_geartype(0) + beta_hooksize(0) + beta_depth*80);
@@ -163,16 +162,17 @@ Type objective_function<Type>::operator() ()
     area_weighted_density_t(t)=0;
     for(int s=0; s<n_s; s++){
       area_weighted_density_t(t)+=
+	// add depth here??
 	area_s(s)*exp(intercept+beta_year(t)+ omega_s(s) + epsilon_st(s,t));
     }
   }
+  // Pearson residuals; (pred-obs)/sd(pred)
+  vector<Type> resids;
+  if(likelihood==1) resids=(log(hooks_i) +mu_i-log(catch_i))/Sigma;
+  if(likelihood==2)
+    resids=(hooks_i*exp(mu_i)-catch_i)/(Sigma*hooks_i*exp(mu_i));
 
-  vector<Type> resids; // pearson residuals: resid/var
-  if(likelihood==1) resids = (log(hooks_i) +mu_i-log(catch_i))/Sigma;
-  if(likelihood==2) resids = (hooks_i*exp(mu_i)-catch_i)/
-		      (Sigma*hooks_i*exp(mu_i));
-  // Reporting
-  // REPORT(jnll_comp);
+  //// Reporting
   REPORT(nll_likelihood);
   REPORT(nll_omega);
   REPORT(nll_epsilon);
@@ -182,6 +182,7 @@ Type objective_function<Type>::operator() ()
   REPORT(beta_depth);
   REPORT(spacing_std);
   REPORT(spacing);
+  REPORT(resids);
   if(form==2){
     Type max_ehook = 1/(1-pow(exp(-18*beta_spacing), 1));
     ADREPORT(max_ehook);
@@ -197,8 +198,8 @@ Type objective_function<Type>::operator() ()
   ADREPORT(beta_hooksize); // hooksize effect
   ADREPORT(beta_depth);	   // linear depth effect
   ADREPORT(beta_depth2);   // quadratic depth effect
-  // random effect variances
   ADREPORT(Sigma);	   	// observation
+  // random effect variances
   Type Sigma_vessel=exp(ln_vessel);
   ADREPORT(Sigma_vessel);
   // Derived geospatial components
@@ -209,6 +210,5 @@ Type objective_function<Type>::operator() ()
   ADREPORT(spacing_std);
   ADREPORT(cph_t);
   ADREPORT(area_weighted_density_t);
-  REPORT(resids);
   return jnll;
 }
