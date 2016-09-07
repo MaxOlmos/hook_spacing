@@ -93,7 +93,7 @@ create.spde <- function(n_knots, make.plot=FALSE){
 }
 
 make.inputs <- function(n_knots, model, form,
-  likelihood=1, vessel_effect=FALSE,  n_points_area=1e4, ...){
+  likelihood=1, vessel_effect=FALSE,  n_points_area=1e3, ...){
   spde <- create.spde(n_knots=n_knots)
   loc <- spde$mesh$loc[,1:2]
   n_s <- nrow(loc)
