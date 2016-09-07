@@ -164,16 +164,11 @@ make.inputs <- function(n_knots, model, form,
    list.factors <- list(
      beta_year=factor(c(NA, 1:(length(levels(df$year))-1))),
     beta_geartype=factor(c(NA, 1:(length(levels(df$geartype))-1))),
-    beta_month=factor(c(NA, 1:(length(levels(df$month))-1))),
-    beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))),
-  lambda=factor(NA))
-    ## OR turn them totally off
-    ## list.factors <- list(
-    ## lambda=factor(NA),
-    ## beta_year=factor(rep(NA, length(levels(df$year)))),
-    ## beta_geartype=factor(rep(NA, length(levels(df$geartype)))),
-    ## beta_month=factor(rep(NA, length(levels(df$month)))),
-    ## beta_hooksize=factor(rep(NA, length(levels(df$hooksize)))))
+    ## beta_month=factor(c(NA, 1:(length(levels(df$month))-1))),
+    ## beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))),
+    beta_month=factor(rep(NA, length(levels(df$month)))),
+    beta_hooksize=factor(rep(NA, length(levels(df$hooksize)))),
+    lambda=factor(NA))
 
   ## Turn off parameters for spacing depending on the form
   if(form==1) {
