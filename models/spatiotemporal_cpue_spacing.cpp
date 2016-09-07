@@ -103,6 +103,7 @@ Type objective_function<Type>::operator() ()
     }
     // Multiplicative form used by H&S.
     if(form==2) spacing(ft)=(1-pow(exp(-beta_spacing*(ft+1)), lambda));
+    if(form==2) spacing(ft)=0; // no effect
   }
 
   // The model predictions for each observation
@@ -121,7 +122,7 @@ Type objective_function<Type>::operator() ()
   // Space and spatio-temporal
   if(space>0) nll_omega += SCALE(GMRF(Q), 1/exp(ln_tau_O))(omega_s);
   if(space>1) {
-  for( int t=0; t<n_t; t++)	
+  for( int t=0; t<n_t; t++)
     nll_epsilon += SCALE(GMRF(Q), 1/exp(ln_tau_E))(epsilon_st.col(t));
   }
   // hook spacing effects
@@ -151,7 +152,7 @@ Type objective_function<Type>::operator() ()
     // ft is again offset by 1 here, so ft=0 =>  spacing of 1ft
     spacing_std(ft)=spacing(ft)/spacing(17);
   // catch per hook -- old way that doesn't make sense right now
-  vector<Type> cph_t(n_t); 
+  vector<Type> cph_t(n_t);
   for( int t=0; t<n_t; t++){
     cph_t(t)=  exp(intercept + beta_year(t) + beta_month(0) +
 		   beta_geartype(0) + beta_hooksize(0) + beta_depth*80);
