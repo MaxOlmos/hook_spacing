@@ -150,15 +150,15 @@ make.inputs <- function(n_knots, model, form,
 
   ## If vessel effect turned on, set it to random
   v <- if(vessel_effect) 'vessel_v' else NULL
-  if(form==1)
+  if(form==1){
     Random <- list(NS=c('spacing_devs', v),
                    S=c('spacing_devs', 'omega_s', v),
                    ST=c("omega_s", "epsilon_st", "spacing_devs",v))
-  if(form==2) ## turn off spacing RE if using H&S formula
+  } else { ## turn off spacing RE if using H&S formula
     Random <- list(NS=v,
                    S=c('omega_s',v),
                    ST=c("omega_s", "epsilon_st",v))
-
+  }
   ## Need to fix first level of each factor at 0 so they are
   ## identifiable. Get merged into the intercept. I.e., contrasts in R.
    list.factors <- list(
@@ -174,10 +174,16 @@ make.inputs <- function(n_knots, model, form,
   if(form==1) {
     ## random walk on spacing
     xx <- list(beta_spacing=factor(NA))
-  } else {
+  }
+  if(form==2) {
     ## H&S form on spacing
     xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
                ln_spacing=factor(NA))
+  }
+  if(form==3) {
+    ## No effect (set to zero in the TMB model)
+    xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
+               ln_spacing=factor(NA), beta_spacing=factor(NA))
   }
   ## add vessels if needed
   if(!vessel_effect) xx <- c(xx, list(vessel_v=factor(rep(NA, length=Data$n_v))), list(ln_vessel=factor(NA)))
