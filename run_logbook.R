@@ -23,20 +23,8 @@ ggplot(xx$sd.density, aes(year, value, ymax=upr, ymin=lwr)) + geom_pointrange()
 
 ### Explore effects of key dimensions.
 
-## Data filtering
-knots <- 1000
-d1 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=FALSE)
-df.temp <- df
-df <- df.unfiltered
-d2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=FALSE)
-g <- plot.parameter.comparison(list(d1,d2),
-     level.name='data', levels=c('Filtered', 'Unfiltered'))
-ggsave('plots/par_comparison_data.png', g, width=8, height=6)
-df <- df.temp
-rm(df.unfiltered, df.temp)
-
 ## Spatial effect
-knots <- 1000
+knots <- 20
 ns <- run.logbook(n_knots=knots, model='NS', form=2, trace=10, vessel=TRUE)
 s <- run.logbook(n_knots=knots, model='S', form=2, trace=10, vessel=TRUE)
 st <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=TRUE)
@@ -45,11 +33,17 @@ g <- plot.parameter.comparison(list(ns,s,st),
 ggsave('plots/par_comparison_model.png')
 
 ## Spacing form
-st1 <- run.logbook(n_knots=knots, model='ST', form=1, trace=10)
-st2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10)
-plot.parameter.comparison(list(st1, st2),
-     level.name='model', levels=c('Nonparametric', 'Hamley & Skud'))
-ggsave('plots/par_comparison_form.png')
+knots <- 20
+st1 <- run.logbook(n_knots=knots, model='NS', form=1, trace=10, vessel=FALSE)
+st2 <- run.logbook(n_knots=knots, model='NS', form=2, trace=10, vessel=FALSE)
+st3 <- run.logbook(n_knots=knots, model='NS', form=3, trace=10, vessel=FALSE)
+g <- plot.parameter.comparison(list(st1, st2, st3),
+     level.name='spacing', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
+ggsave('plots/par_comparison_form.png', g, width=10, height=6)
+g <- plot.spacing.comparison(list(st1, st2, st3),
+     level.name='model', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
+ggsave('plots/spacing_comparison_form.png', g, width=10, height=6)
+
 
 ## Vessel effect
 knots <- 50
@@ -63,7 +57,18 @@ par(mfrow=c(1,2))
 with(v0$report, {qqnorm(resids, main='No vessel effect'); qqline(resids)})
 with(v1$report, {qqnorm(resids, main='Vessel effect'); qqline(resids)})
 dev.off()
-z
+## Data filtering
+knots <- 1000
+d1 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=FALSE)
+df.temp <- df
+df <- df.unfiltered
+d2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=FALSE)
+g <- plot.parameter.comparison(list(d1,d2),
+     level.name='data', levels=c('Filtered', 'Unfiltered'))
+ggsave('plots/par_comparison_data.png', g, width=8, height=6)
+df <- df.temp
+rm(df.unfiltered, df.temp)
+
 
 
 
