@@ -113,21 +113,13 @@ Type objective_function<Type>::operator() ()
   // The model predictions for each observation
   vector<Type> mu_i(n_i);
   for( int i=0; i<n_i; i++){
-    if(form==1)
-    mu_i(i) = intercept +
-      spacing(spacing_i(i))+ beta_year(year_i(i)) +
-      beta_month(month_i(i)) + beta_geartype(geartype_i(i)) +
-      beta_hooksize(hooksize_i(i)) +
-      beta_depth*depth_i(i) + beta_depth2*depth_i(i)*depth_i(i) +
-      omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i));
-    if(form==2)
-      mu_i(i) = spacing(spacing_i(i))*
-	(intercept + beta_year(year_i(i)) +
+      mu_i(i) = spacing(spacing_i(i))+
+	intercept + beta_year(year_i(i)) +
 	 beta_month(month_i(i)) + beta_geartype(geartype_i(i)) +
 	 beta_hooksize(hooksize_i(i)) +
 	 beta_depth*depth_i(i) + beta_depth2*depth_i(i)*depth_i(i) +
 	 vessel_v(vessel_i(i))+
-	 omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i)));
+	 omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i));
   }
 
   // Probability of random effects
