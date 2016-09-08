@@ -33,7 +33,8 @@ effective.skates(100, 18)               # doesn't quite match up due to rounding
 clean.TMB.files <- function(model.path){
   o <- paste0(model.path,'.o')
   dll <- paste0(model.path, '.dll')
-  if(is.loaded(dynlib(model.path))) dyn.unload( dynlib(model.path))
+  ## if(is.loaded(dynlib(model.path)))
+    dyn.unload(dynlib(model.path))
   if(file.exists(dll)) trash <- file.remove(dll)
   if(file.exists(o)) trash <- file.remove(o)
 }
@@ -61,15 +62,26 @@ plot.parameter.comparison <- function(fits, level.name, levels){
   return(g)
 }
 
+
 ## Same as above but for spacing effect. Currently broken.
 plot.spacing.comparison <- function(fits, level.name, levels){
   test <- ldply(1:length(fits), function(x)
     cbind(level.name=levels[x], fits[[x]]$sd.spacing))
   test[,level.name] <- test$level.name
   test$level.name <- NULL
-  g <- ggplot(test, aes(spacing, value, color=model, group=model, ymin=lwr, ymax=upr)) +
+  g <- ggplot(test, aes(spacing, value, color=level.name, group=level.name, ymin=lwr, ymax=upr)) +
     geom_linerange(lwd=1.5) + facet_wrap(level.name) +
    geom_vline(xintercept=18)
+  return(g)
+}
+
+## Same as above but for abundance trends
+plot.cpue.comparison <- function(fits, levels){
+  test <- ldply(1:length(fits), function(x)
+    cbind(model=fits[[x]]$model, form=fits[[x]]$form, year=1996:2015, level.name=levels[x], fits[[x]]$sd.density))
+  g <- ggplot(test, aes(year, value, color=level.name, group=level.name, ymin=lwr, ymax=upr)) +
+    geom_linerange(lwd=1.5) + facet_grid(form~model)
+  g
   return(g)
 }
 
