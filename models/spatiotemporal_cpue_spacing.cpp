@@ -60,8 +60,8 @@ Type objective_function<Type>::operator() ()
   PARAMETER(beta_depth);	   // linear depth effect
   PARAMETER(beta_depth2);	   // quadratic depth effect
   PARAMETER(beta_spacing);	   // from H&S formula
+  PARAMETER(alpha_spacing);	   // from H&S formula
   PARAMETER(lambda);		   // from H&S formula
-  //PARAMETER(alpha_spacing);	   // from H&S formula
   // Variances
   PARAMETER(ln_tau_O);		  // spatial process
   PARAMETER(ln_tau_E);		  // spatio-temporal process
@@ -102,8 +102,8 @@ Type objective_function<Type>::operator() ()
       else spacing(ft)=spacing(ft-1)+spacing_devs(ft);
     }
     // Multiplicative form used by H&S.
-    if(form==2) spacing(ft)=(1-pow(exp(-beta_spacing*(ft+1)), lambda));
-    if(form==2) spacing(ft)=0; // no effect
+    if(form==2) spacing(ft)=alpha_spacing*(1-pow(exp(-beta_spacing*(ft+1)), lambda));
+    if(form==3) spacing(ft)=0; // no effect
   }
 
   // The model predictions for each observation
@@ -150,7 +150,8 @@ Type objective_function<Type>::operator() ()
   vector<Type> spacing_std(n_ft);
   for(int ft=0; ft<n_ft; ft++)
     // ft is again offset by 1 here, so ft=0 =>  spacing of 1ft
-    spacing_std(ft)=spacing(ft)/spacing(17);
+    if(form==3)spacing_std(ft)=spacing(ft);
+    else spacing_std(ft)=spacing(ft)/spacing(17);
   // catch per hook -- old way that doesn't make sense right now
   vector<Type> cph_t(n_t);
   for( int t=0; t<n_t; t++){
@@ -185,9 +186,10 @@ Type objective_function<Type>::operator() ()
   REPORT(spacing);
   REPORT(resids);
   if(form==2){
-    Type max_ehook = 1/(1-pow(exp(-18*beta_spacing), 1));
+    Type max_ehook = 1/(1-pow(exp(-18*beta_spacing), lambda));
     ADREPORT(max_ehook);
     ADREPORT(beta_spacing);
+    ADREPORT(alpha_spacing);
     ADREPORT(lambda);
   } else {
       ADREPORT(ln_spacing);	  // Hook spacing effect
@@ -195,8 +197,8 @@ Type objective_function<Type>::operator() ()
   ADREPORT(intercept);		   // global mean log catch
   ADREPORT(beta_year);	   // year effect
   ADREPORT(beta_geartype); // geartype effect
-  ADREPORT(beta_month);	   // month effect
-  ADREPORT(beta_hooksize); // hooksize effect
+  // ADREPORT(beta_month);	   // month effect
+  // ADREPORT(beta_hooksize); // hooksize effect
   ADREPORT(beta_depth);	   // linear depth effect
   ADREPORT(beta_depth2);   // quadratic depth effect
   ADREPORT(Sigma);	   	// observation

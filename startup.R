@@ -142,7 +142,8 @@ make.inputs <- function(n_knots, model, form,
                  beta_geartype= c(0,0, 0),
                  beta_month=rep(0, length(levels(df$month))),
                  beta_hooksize=rep(0, length(levels(df$hooksize))),
-                 beta_depth=0,beta_depth2=0, beta_spacing=0, lambda=1,
+                 beta_depth=0,beta_depth2=0,
+                 beta_spacing=0.5, alpha_spacing=1, lambda=1,
                  ln_tau_O=-.6, ln_tau_E=.25,
                  ln_kappa=.3,  ln_obs=-.2, ln_spacing=0,
                  ln_vessel=.1,
@@ -176,7 +177,7 @@ make.inputs <- function(n_knots, model, form,
   ## Turn off parameters for spacing depending on the form
   if(form==1) {
     ## random walk on spacing
-    xx <- list(beta_spacing=factor(NA))
+    xx <- list(beta_spacing=factor(NA), alpha_spacing=factor(NA))
   }
   if(form==2) {
     ## H&S form on spacing
@@ -186,7 +187,8 @@ make.inputs <- function(n_knots, model, form,
   if(form==3) {
     ## No effect (set to zero in the TMB model)
     xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
-               ln_spacing=factor(NA), beta_spacing=factor(NA))
+               ln_spacing=factor(NA), beta_spacing=factor(NA),
+               alpha_spacing=factor(NA))
   }
   ## add vessels if needed
   if(!vessel_effect) xx <- c(xx, list(vessel_v=factor(rep(NA, length=Data$n_v))), list(ln_vessel=factor(NA)))
