@@ -64,39 +64,40 @@ plot.parameter.comparison <- function(fits, level.name, levels){
 
 
 ## Same as above but for spacing effect. Currently broken.
-plot.spacing.comparison <- function(fits, level.name, levels){
+plot.spacing.comparison <- function(fits){
   test <- ldply(1:length(fits), function(x)
-    cbind(model=fits[[x]]$model, form=fits[[x]]$form, level.name=levels[x], fits[[x]]$sd.spacing))
-  test$level.name <- NULL
-  g <- ggplot(test, aes(spacing, value, fill=model,
+    cbind(model=fits[[x]]$model, form=fits[[x]]$form, fits[[x]]$sd.spacing))
+  test$form <- factor(test$form, labels=c('Nonparametric', 'Hamley & Skud', 'None'))
+  test$model <- factor(test$model, labels=c('No Space', 'Space', 'Spatiotemporal'))
+  g <- ggplot(test, aes(spacing, value, fill=model, col=model,
                   ymin=lwr, ymax=upr)) +
     geom_ribbon(lwd=1, alpha=1/3) + facet_grid(form~.) +
-   geom_vline(xintercept=18) + geom_line()
-  g
+   geom_vline(xintercept=18) + geom_line(lwd=1) + ylab("Effective Hooks")
   return(g)
 }
 
 ## Same as above but for abundance trends
-plot.cpue.comparison <- function(fits, levels){
-
+plot.cpue.comparison <- function(fits){
   test <- ldply(1:length(fits), function(x)
-    cbind(model=fits[[x]]$model, form=fits[[x]]$form, year=1996:2015,
-          model.name=levels[x], fits[[x]]$sd.density))
+    cbind(model=fits[[x]]$model, form=fits[[x]]$form, year=1996:2015, fits[[x]]$sd.density))
+  test$form <- factor(test$form, labels=c('Nonparametric', 'Hamley & Skud', 'None'))
+  test$model <- factor(test$model, labels=c('No Space', 'Space', 'Spatiotemporal'))
   g <- ggplot(test, aes(year, value, color=model, fill=model, group=model, ymin=lwr, ymax=upr)) +
-    geom_ribbon(alpha=1/3) + facet_grid(form~.) + geom_line(lwd=2)
-  g + theme_bw()
+    geom_ribbon(alpha=1/3) + facet_grid(form~., scales='free_y') + geom_line(lwd=2)
+  g <- g + theme_bw() + ylab("Relative Abundance")
   return(g)
 }
 
-## Same as above but for QQ plots
+## Same as above but for residuals
 plot.resids.comparison <- function(fits){
-
   test <- ldply(1:length(fits), function(x)
     data.frame(model=fits[[x]]$model, form=fits[[x]]$form, resids=fits[[x]]$report$resids))
-
+  test$form <- factor(test$form, labels=c('Nonparametric', 'Hamley & Skud', 'None'))
+  test$model <- factor(test$model, labels=c('No Space', 'Space', 'Spatiotemporal'))
   g <- ggplot(test, aes(x=resids, group=model, fill=model)) +
-                    facet_grid(form~.) + geom_density(alpha=1/3)
-  g + theme_bw()
+    facet_grid(form~.) +
+    geom_histogram(alpha=1/3, bins=200, position='identity')
+  g <- g + theme_bw()
   return(g)
 }
 
