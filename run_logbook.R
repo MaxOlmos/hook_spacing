@@ -15,12 +15,6 @@ dyn.load( dynlib(Version))
 ## and full spatio-temporal (ST). orm=1 implies a random walk on hook
 ## spacing, form=2 is the parametric HS model.
 
-## Temp code to explore CPUE calculations
-xx <- run.logbook(n_knots=100, model='S', form=2, vessel=FALSE)
-ggplot(xx$sd.cpue, aes(year, value, ymax=upr, ymin=lwr)) + geom_pointrange()
-ggplot(xx$sd.density, aes(year, value, ymax=upr, ymin=lwr)) + geom_pointrange()
-
-
 ### Explore effects of key dimensions.
 
 ## Spatial effect
@@ -58,7 +52,6 @@ g <- plot.resids.comparison(fits=fits)
 g <- g+theme_bw()
 ggsave('plots/resids_comparison.png', g, width=5, height=6)
 
-
 ## Vessel effect
 knots <- 50
 v0 <- run.logbook(n_knots=knots, model='ST', form=2, vessel_effect=FALSE, trace=10)
@@ -71,6 +64,7 @@ par(mfrow=c(1,2))
 with(v0$report, {qqnorm(resids, main='No vessel effect'); qqline(resids)})
 with(v1$report, {qqnorm(resids, main='Vessel effect'); qqline(resids)})
 dev.off()
+
 ## Data filtering
 knots <- 1000
 d1 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=FALSE)
