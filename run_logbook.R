@@ -16,7 +16,7 @@ dyn.load( dynlib(Version))
 ## spacing, form=2 is the parametric HS model.
 
 ## Temp code to explore CPUE calculations
-xx <- run.logbook(n_knots=100, model='S', form=2, trace=10, vessel=FALSE)
+xx <- run.logbook(n_knots=100, model='S', form=2, vessel=FALSE)
 ggplot(xx$sd.cpue, aes(year, value, ymax=upr, ymin=lwr)) + geom_pointrange()
 ggplot(xx$sd.density, aes(year, value, ymax=upr, ymin=lwr)) + geom_pointrange()
 
@@ -25,24 +25,38 @@ ggplot(xx$sd.density, aes(year, value, ymax=upr, ymin=lwr)) + geom_pointrange()
 
 ## Spatial effect
 knots <- 20
-ns <- run.logbook(n_knots=knots, model='NS', form=2, trace=10, vessel=TRUE)
-s <- run.logbook(n_knots=knots, model='S', form=2, trace=10, vessel=TRUE)
-st <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=TRUE)
+ns <- run.logbook(n_knots=knots, model='NS', form=2, vessel=TRUE)
+s <- run.logbook(n_knots=knots, model='S', form=2, vessel=TRUE)
+st <- run.logbook(n_knots=knots, model='ST', form=2, vessel=TRUE)
 g <- plot.parameter.comparison(list(ns,s,st),
      level.name='model', levels=c('NS', 'S', 'ST'))
 ggsave('plots/par_comparison_model.png')
 
-## Spacing form
-knots <- 20
-st1 <- run.logbook(n_knots=knots, model='NS', form=1, trace=10, vessel=FALSE)
-st2 <- run.logbook(n_knots=knots, model='NS', form=2, trace=10, vessel=FALSE)
-st3 <- run.logbook(n_knots=knots, model='NS', form=3, trace=10, vessel=FALSE)
-g <- plot.parameter.comparison(list(st1, st2, st3),
-     level.name='spacing', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
+## Spacing vs model!
+knots <- 1000
+form1 <- run.logbook(n_knots=knots, model='NS', form=1, vessel=FALSE)
+form2 <- run.logbook(n_knots=knots, model='NS', form=2, vessel=FALSE)
+form3 <- run.logbook(n_knots=knots, model='NS', form=3, vessel=FALSE)
+form4 <- run.logbook(n_knots=knots, model='S', form=1, vessel=FALSE)
+form5 <- run.logbook(n_knots=knots, model='S', form=2, vessel=FALSE)
+form6 <- run.logbook(n_knots=knots, model='S', form=3, vessel=FALSE)
+form7 <- run.logbook(n_knots=knots, model='ST', form=1, vessel=FALSE)
+form8 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=FALSE)
+form9 <- run.logbook(n_knots=knots, model='ST', form=3, vessel=FALSE)
+fits <- list(form1, form2, form3, form4, form5, form6, form7, form8, form9)
+g <- plot.parameter.comparison(fits=fits,
+ level.name='model', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
 ggsave('plots/par_comparison_form.png', g, width=10, height=6)
-g <- plot.spacing.comparison(list(st1, st2, st3),
-     level.name='model', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
-ggsave('plots/spacing_comparison_form.png', g, width=10, height=6)
+g <- plot.cpue.comparison(fits=fits,
+      levels=c('Nonparametric', 'Hamley & Skud', 'None'))
+ggsave('plots/cpue_comparison_form.png', g, width=10, height=6)
+g <- plot.spacing.comparison(fits=fits,
+     level.name='spacing', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
+g <- g+theme_bw()
+ggsave('plots/spacing_comparison.png', g, width=5, height=6)
+g <- plot.resids.comparison(fits=fits)
+g <- g+theme_bw()
+ggsave('plots/resids_comparison.png', g, width=5, height=6)
 
 
 ## Vessel effect
@@ -59,10 +73,10 @@ with(v1$report, {qqnorm(resids, main='Vessel effect'); qqline(resids)})
 dev.off()
 ## Data filtering
 knots <- 1000
-d1 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=FALSE)
+d1 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=FALSE)
 df.temp <- df
 df <- df.unfiltered
-d2 <- run.logbook(n_knots=knots, model='ST', form=2, trace=10, vessel=FALSE)
+d2 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=FALSE)
 g <- plot.parameter.comparison(list(d1,d2),
      level.name='data', levels=c('Filtered', 'Unfiltered'))
 ggsave('plots/par_comparison_data.png', g, width=8, height=6)

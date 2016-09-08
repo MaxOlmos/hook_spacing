@@ -33,7 +33,8 @@ effective.skates(100, 18)               # doesn't quite match up due to rounding
 clean.TMB.files <- function(model.path){
   o <- paste0(model.path,'.o')
   dll <- paste0(model.path, '.dll')
-  if(is.loaded(dynlib(model.path))) dyn.unload( dynlib(model.path))
+  ## if(is.loaded(dynlib(model.path)))
+    dyn.unload(dynlib(model.path))
   if(file.exists(dll)) trash <- file.remove(dll)
   if(file.exists(o)) trash <- file.remove(o)
 }
@@ -61,15 +62,41 @@ plot.parameter.comparison <- function(fits, level.name, levels){
   return(g)
 }
 
+
 ## Same as above but for spacing effect. Currently broken.
 plot.spacing.comparison <- function(fits, level.name, levels){
   test <- ldply(1:length(fits), function(x)
-    cbind(level.name=levels[x], fits[[x]]$sd.spacing))
-  test[,level.name] <- test$level.name
+    cbind(model=fits[[x]]$model, form=fits[[x]]$form, level.name=levels[x], fits[[x]]$sd.spacing))
   test$level.name <- NULL
-  g <- ggplot(test, aes(spacing, value, color=model, group=model, ymin=lwr, ymax=upr)) +
-    geom_linerange(lwd=1.5) + facet_wrap(level.name) +
-   geom_vline(xintercept=18)
+  g <- ggplot(test, aes(spacing, value, fill=model,
+                  ymin=lwr, ymax=upr)) +
+    geom_ribbon(lwd=1, alpha=1/3) + facet_grid(form~.) +
+   geom_vline(xintercept=18) + geom_line()
+  g
+  return(g)
+}
+
+## Same as above but for abundance trends
+plot.cpue.comparison <- function(fits, levels){
+
+  test <- ldply(1:length(fits), function(x)
+    cbind(model=fits[[x]]$model, form=fits[[x]]$form, year=1996:2015,
+          model.name=levels[x], fits[[x]]$sd.density))
+  g <- ggplot(test, aes(year, value, color=model, fill=model, group=model, ymin=lwr, ymax=upr)) +
+    geom_ribbon(alpha=1/3) + facet_grid(form~.) + geom_line(lwd=2)
+  g + theme_bw()
+  return(g)
+}
+
+## Same as above but for QQ plots
+plot.resids.comparison <- function(fits){
+
+  test <- ldply(1:length(fits), function(x)
+    data.frame(model=fits[[x]]$model, form=fits[[x]]$form, resids=fits[[x]]$report$resids))
+
+  g <- ggplot(test, aes(x=resids, group=model, fill=model)) +
+                    facet_grid(form~.) + geom_density(alpha=1/3)
+  g + theme_bw()
   return(g)
 }
 
@@ -142,7 +169,8 @@ make.inputs <- function(n_knots, model, form,
                  beta_geartype= c(0,0, 0),
                  beta_month=rep(0, length(levels(df$month))),
                  beta_hooksize=rep(0, length(levels(df$hooksize))),
-                 beta_depth=0,beta_depth2=0, beta_spacing=0, lambda=1,
+                 beta_depth=0,beta_depth2=0,
+                 beta_spacing=0.5, alpha_spacing=1, lambda=1,
                  ln_tau_O=-.6, ln_tau_E=.25,
                  ln_kappa=.3,  ln_obs=-.2, ln_spacing=0,
                  ln_vessel=.1,
@@ -170,13 +198,13 @@ make.inputs <- function(n_knots, model, form,
     ## beta_month=factor(c(NA, 1:(length(levels(df$month))-1))),
     ## beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))),
     beta_month=factor(rep(NA, length(levels(df$month)))),
-    beta_hooksize=factor(rep(NA, length(levels(df$hooksize)))),
-    lambda=factor(NA))
+    beta_hooksize=factor(rep(NA, length(levels(df$hooksize)))))
 
   ## Turn off parameters for spacing depending on the form
   if(form==1) {
     ## random walk on spacing
-    xx <- list(beta_spacing=factor(NA))
+    xx <- list(beta_spacing=factor(NA), alpha_spacing=factor(NA),
+               lambda=factor(NA))
   }
   if(form==2) {
     ## H&S form on spacing
@@ -186,7 +214,8 @@ make.inputs <- function(n_knots, model, form,
   if(form==3) {
     ## No effect (set to zero in the TMB model)
     xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
-               ln_spacing=factor(NA), beta_spacing=factor(NA))
+               ln_spacing=factor(NA), beta_spacing=factor(NA),
+               alpha_spacing=factor(NA), lambda=factor(NA))
   }
   ## add vessels if needed
   if(!vessel_effect) xx <- c(xx, list(vessel_v=factor(rep(NA, length=Data$n_v))), list(ln_vessel=factor(NA)))
