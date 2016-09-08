@@ -109,7 +109,7 @@ Type objective_function<Type>::operator() ()
   // The model predictions for each observation
   vector<Type> mu_i(n_i);
   for( int i=0; i<n_i; i++){
-      mu_i(i) = spacing(spacing_i(i))+
+    mu_i(i) = log(hooks_i(i))+spacing(spacing_i(i))+
 	intercept + beta_year(year_i(i)) +
 	 beta_month(month_i(i)) + beta_geartype(geartype_i(i)) +
 	 beta_hooksize(hooksize_i(i)) +
@@ -136,11 +136,15 @@ Type objective_function<Type>::operator() ()
   for( int i=0; i<n_i; i++){
     if(likelihood==1) // lognormal case; see top of file for function
       nll_likelihood -=
-	dlognorm(catch_i(i), log(hooks_i(i))+mu_i(i), exp(ln_obs), true);
+	dlognorm(catch_i(i), mu_i(i), Sigma, true);
     if(likelihood==2) // gamma case
       nll_likelihood -=
-    dgamma(catch_i(i), 1/pow(Sigma,2), hooks_i(i)*exp(mu_i(i))*pow(Sigma,2), true);
+    dgamma(catch_i(i), 1/pow(Sigma,2), exp(mu_i(i))*pow(Sigma,2), true);
+    if(likelihood==3) // inverse gaussian
+      nll_likelihood-=
+	dinvgauss(catch_i(i), exp(mu_i(i)), Sigma, true );
   }
+
 
   // Calculate joint negative log likelihood
   Type jnll = nll_likelihood+nll_omega+nll_epsilon+nll_spacing +nll_vessel;
@@ -170,9 +174,10 @@ Type objective_function<Type>::operator() ()
   }
   // Pearson residuals; (pred-obs)/sd(pred)
   vector<Type> resids;
-  if(likelihood==1) resids=(log(hooks_i) +mu_i-log(catch_i))/Sigma;
-  if(likelihood==2)
-    resids=(hooks_i*exp(mu_i)-catch_i)/(Sigma*hooks_i*exp(mu_i));
+  if(likelihood==1) resids=(mu_i-log(catch_i))/Sigma;
+  if(likelihood==2) resids=(exp(mu_i)-catch_i)/(Sigma*exp(mu_i));
+  if(likelihood==3) resids=(exp(mu_i)-catch_i)/(sqrt(exp(mu_i+mu_i+mu_i))/sqrt(Sigma));
+  vector<Type> preds = exp(mu_i);
 
   //// Reporting
   REPORT(nll_likelihood);
@@ -185,6 +190,7 @@ Type objective_function<Type>::operator() ()
   REPORT(spacing_std);
   REPORT(spacing);
   REPORT(resids);
+  REPORT(preds);
   if(form==2){
     Type max_ehook = 1/(1-pow(exp(-18*beta_spacing), lambda));
     ADREPORT(max_ehook);
