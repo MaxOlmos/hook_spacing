@@ -58,7 +58,7 @@ plot.parameter.comparison <- function(fits, level.name, levels){
   g <- ggplot(test, aes_string('par3', 'value', color=level.name,
   group=level.name, ymin='lwr', ymax='upr')) +
     geom_linerange(lwd=1.5) + facet_wrap('par', scales='free') +
-    geom_hline(yintercept=0)
+    geom_hline(yintercept=0) + geom_point()
   return(g)
 }
 
