@@ -4,6 +4,9 @@ df.unfiltered <- readRDS(file='data/data_unfiltered.RDS')
 df.unfiltered$spacing <- round(df.unfiltered$spacing)
 df <- readRDS(file='data/data.RDS')
 df$spacing <- round(df$spacing)
+df.simulated <- df
+df.simulated$catch <- with(df, hooks*exp(-.1+rnorm(n=nrow(df), mean=0, sd=.1)))
+df <- df.simulated
 n_years <- length(unique(df$year))
 Version <- "models/spatiotemporal_cpue_spacing"
 clean.TMB.files(Version)
@@ -15,7 +18,35 @@ dyn.load( dynlib(Version))
 ## and full spatio-temporal (ST). orm=1 implies a random walk on hook
 ## spacing, form=2 is the parametric HS model.
 
+
 ### Explore effects of key dimensions.
+
+## Likelihoods
+knots=20
+mlog <- run.logbook(n_knots=knots, model='NS', form=3, vessel=FALSE)
+mgam <- run.logbook(n_knots=knots, model='NS', form=3, vessel=FALSE, likelihood=2)
+minvg <- run.logbook(n_knots=knots, model='NS', form=3, vessel=FALSE, likelihood=3)
+fits <- list(mlog, mgam, minvg)
+
+temp <- ldply(1:length(fits), function(x)
+  data.frame(likelihood=fits[[x]]$likelihood, form=fits[[x]]$form,
+             resids=fits[[x]]$report$resids, preds=fits[[x]]$report$preds))
+temp$likelihood <- factor(temp$likelihood, labels=c('Lognormal', 'Gamma', 'Inverse Gaussian'))
+g <- ggplot(temp, aes(preds, resids)) + geom_point(alpha=.1, size=.1) +
+  xlab('Predicted Catch') + ylab('Pearson Residual') + facet_wrap('likelihood') +
+  scale_x_log10() + ylim(-5,5) + theme_bw() + geom_hline(yintercept=0)
+ggsave('plots/outliers_normal.png', g, width=map.width, height=map.height)
+df.temp <- df
+df.temp$resids=mlog$report$resids
+g <- ggplot(droplevels(subset(df.temp, abs(resids)>4)),
+            aes(longitude, latitude, color=geartype)) +
+  geom_point(alpha=.7) + ggtitle('Lognormal model: Pearson residuals > 4')
+rm(df.temp)
+ggsave('plots/map_outliers_normal.png', g, width=map.width, height=map.height)
+g <- plot.parameter.comparison(fits,
+     level.name='likelihood', levels=c('Lognormal', 'Gamma', 'Inv. Gaussian'))
+ggsave('plots/par_comparison_likelihood.png', g, width=ggwidth, height=ggheight)
+
 
 ## Spatial effect
 knots <- 20
