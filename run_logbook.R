@@ -38,18 +38,16 @@ form7 <- run.logbook(n_knots=knots, model='ST', form=1, vessel=FALSE)
 form8 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=FALSE)
 form9 <- run.logbook(n_knots=knots, model='ST', form=3, vessel=FALSE)
 fits <- list(form1, form2, form3, form4, form5, form6, form7, form8, form9)
-g <- plot.parameter.comparison(fits=fits,
+saveRDS(fits, file='results/fits_form_vs_model.RDS')
+## Make quick plots
+g <- plot.parameter.comparison(fits=list(form7,form8,form9),
  level.name='model', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
 ggsave('plots/par_comparison_form.png', g, width=10, height=6)
-g <- plot.cpue.comparison(fits=fits,
-      levels=c('Nonparametric', 'Hamley & Skud', 'None'))
+g <- plot.cpue.comparison(fits=fits)
 ggsave('plots/cpue_comparison_form.png', g, width=10, height=6)
-g <- plot.spacing.comparison(fits=fits,
-     level.name='spacing', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
-g <- g+theme_bw()
+g <- plot.spacing.comparison(fits=fits)
 ggsave('plots/spacing_comparison.png', g, width=5, height=6)
 g <- plot.resids.comparison(fits=fits)
-g <- g+theme_bw()
 ggsave('plots/resids_comparison.png', g, width=5, height=6)
 
 ## Vessel effect

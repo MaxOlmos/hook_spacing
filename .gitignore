@@ -4,4 +4,4 @@ data_unfiltered.RDS
 *.dll
 *.o
 hs_data.csv
-
+results/fits*
