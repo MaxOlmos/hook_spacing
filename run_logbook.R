@@ -4,9 +4,9 @@ df.unfiltered <- readRDS(file='data/data_unfiltered.RDS')
 df.unfiltered$spacing <- round(df.unfiltered$spacing)
 df <- readRDS(file='data/data.RDS')
 df$spacing <- round(df$spacing)
-df.simulated <- df
-df.simulated$catch <- with(df, hooks*exp(-.1+rnorm(n=nrow(df), mean=0, sd=.1)))
-df <- df.simulated
+## df.simulated <- df
+## df.simulated$catch <- with(df, hooks*exp(-.1+rnorm(n=nrow(df), mean=0, sd=.1)))
+## df <- df.simulated
 n_years <- length(unique(df$year))
 Version <- "models/spatiotemporal_cpue_spacing"
 clean.TMB.files(Version)
@@ -22,12 +22,11 @@ dyn.load( dynlib(Version))
 ### Explore effects of key dimensions.
 
 ## Likelihoods
-knots=20
-mlog <- run.logbook(n_knots=knots, model='NS', form=3, vessel=FALSE)
-mgam <- run.logbook(n_knots=knots, model='NS', form=3, vessel=FALSE, likelihood=2)
-minvg <- run.logbook(n_knots=knots, model='NS', form=3, vessel=FALSE, likelihood=3)
+knots <- 1000
+mlog <- run.logbook(n_knots=knots, model='NS', form=3, vessel=TRUE)
+mgam <- run.logbook(n_knots=knots, model='NS', form=3, vessel=TRUE, likelihood=2)
+minvg <- run.logbook(n_knots=knots, model='NS', form=3, vessel=TRUE, likelihood=3)
 fits <- list(mlog, mgam, minvg)
-
 temp <- ldply(1:length(fits), function(x)
   data.frame(likelihood=fits[[x]]$likelihood, form=fits[[x]]$form,
              resids=fits[[x]]$report$resids, preds=fits[[x]]$report$preds))
@@ -47,9 +46,8 @@ g <- plot.parameter.comparison(fits,
      level.name='likelihood', levels=c('Lognormal', 'Gamma', 'Inv. Gaussian'))
 ggsave('plots/par_comparison_likelihood.png', g, width=ggwidth, height=ggheight)
 
-
 ## Spatial effect
-knots <- 20
+knots <- 1000
 ns <- run.logbook(n_knots=knots, model='NS', form=2, vessel=TRUE)
 s <- run.logbook(n_knots=knots, model='S', form=2, vessel=TRUE)
 st <- run.logbook(n_knots=knots, model='ST', form=2, vessel=TRUE)
@@ -59,15 +57,15 @@ ggsave('plots/par_comparison_model.png')
 
 ## Spacing vs model!
 knots <- 1000
-form1 <- run.logbook(n_knots=knots, model='NS', form=1, vessel=FALSE)
-form2 <- run.logbook(n_knots=knots, model='NS', form=2, vessel=FALSE)
-form3 <- run.logbook(n_knots=knots, model='NS', form=3, vessel=FALSE)
-form4 <- run.logbook(n_knots=knots, model='S', form=1, vessel=FALSE)
-form5 <- run.logbook(n_knots=knots, model='S', form=2, vessel=FALSE)
-form6 <- run.logbook(n_knots=knots, model='S', form=3, vessel=FALSE)
-form7 <- run.logbook(n_knots=knots, model='ST', form=1, vessel=FALSE)
-form8 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=FALSE)
-form9 <- run.logbook(n_knots=knots, model='ST', form=3, vessel=FALSE)
+form1 <- run.logbook(n_knots=knots, model='NS', form=1, vessel=TRUE)
+form2 <- run.logbook(n_knots=knots, model='NS', form=2, vessel=TRUE)
+form3 <- run.logbook(n_knots=knots, model='NS', form=3, vessel=TRUE)
+form4 <- run.logbook(n_knots=knots, model='S', form=1, vessel=TRUE)
+form5 <- run.logbook(n_knots=knots, model='S', form=2, vessel=TRUE)
+form6 <- run.logbook(n_knots=knots, model='S', form=3, vessel=TRUE)
+form7 <- run.logbook(n_knots=knots, model='ST', form=1, vessel=TRUE)
+form8 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=TRUE)
+form9 <- run.logbook(n_knots=knots, model='ST', form=3, vessel=TRUE)
 fits <- list(form1, form2, form3, form4, form5, form6, form7, form8, form9)
 saveRDS(fits, file='results/fits_form_vs_model.RDS')
 ## Make quick plots
@@ -82,7 +80,7 @@ g <- plot.resids.comparison(fits=fits)
 ggsave('plots/resids_comparison.png', g, width=5, height=6)
 
 ## Vessel effect
-knots <- 50
+knots <- 1000
 v0 <- run.logbook(n_knots=knots, model='ST', form=2, vessel_effect=FALSE, trace=10)
 v1 <- run.logbook(n_knots=knots, model='ST', form=2, vessel_effect=TRUE, trace=10)
 plot.parameter.comparison(list(v0, v1),
