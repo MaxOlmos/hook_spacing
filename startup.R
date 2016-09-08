@@ -91,7 +91,8 @@ plot.cpue.comparison <- function(fits){
 ## Same as above but for residuals
 plot.resids.comparison <- function(fits){
   test <- ldply(1:length(fits), function(x)
-    data.frame(model=fits[[x]]$model, form=fits[[x]]$form, resids=fits[[x]]$report$resids))
+    data.frame(model=fits[[x]]$model, form=fits[[x]]$form,
+               resids=fits[[x]]$report$resids, preds=fits[[x]]$report$preds))
   test$form <- factor(test$form, labels=c('Nonparametric', 'Hamley & Skud', 'None'))
   test$model <- factor(test$model, labels=c('No Space', 'Space', 'Spatiotemporal'))
   g <- ggplot(test, aes(x=resids, group=model, fill=model)) +
