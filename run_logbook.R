@@ -66,7 +66,9 @@ g <- plot.parameter.comparison(list(ns1, ns2, ns3),
 ggsave('plots/par_comparison_model.png', g, width=12, height=6)
 g <- plot.spacing.comparison(fits=list(ns1, ns2, ns3))
 ggsave('plots/spacing_comparison.png', g, width=5, height=6)
-plot(df$spacing, ns2$report$resids, pch='.', col=rgb(0,0,0,.1))
+g <- plot.power.comparison(fits=list(ns1, ns2, ns3))
+ggsave('plots/power_comparison.png', g, width=5, height=6)
+## plot(df$spacing, ns2$report$resids, pch='.', col=rgb(0,0,0,.1))
 
 ## Spacing vs model!
 knots <- 1000
