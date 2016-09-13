@@ -60,7 +60,7 @@ Type objective_function<Type>::operator() ()
   PARAMETER(beta_depth);	   // linear depth effect
   PARAMETER(beta_depth2);	   // quadratic depth effect
   PARAMETER(beta_spacing);	   // from H&S formula
-  PARAMETER(alpha_spacing);	   // from H&S formula
+  //  PARAMETER(alpha_spacing);	   // from H&S formula
   PARAMETER(lambda);		   // from H&S formula
   // Variances
   PARAMETER(ln_tau_O);		  // spatial process
@@ -195,7 +195,7 @@ Type objective_function<Type>::operator() ()
     Type max_ehook = 1/(1-pow(exp(-18*beta_spacing), lambda));
     ADREPORT(max_ehook);
     ADREPORT(beta_spacing);
-    ADREPORT(alpha_spacing);
+    //    ADREPORT(alpha_spacing);
     ADREPORT(lambda);
   } else {
       ADREPORT(ln_spacing);	  // Hook spacing effect
