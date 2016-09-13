@@ -64,6 +64,19 @@ plot.parameter.comparison <- function(fits, level.name, levels){
 
 
 ## Same as above but for spacing effect. Currently broken.
+plot.power.comparison <-
+  function(fits){
+    test <- ldply(1:length(fits), function(x)
+      cbind(model=fits[[x]]$model.name, form=fits[[x]]$form.name, fits[[x]]$sd.hook_power))
+    g <- ggplot(test, aes(hook_power, value, fill=model, col=model,
+                          ymin=lwr, ymax=upr)) +
+
+  geom_ribbon(lwd=1, alpha=1/3) + facet_grid(form~.) +
+      geom_vline(xintercept=18) + geom_line(lwd=1) + ylab("Effective Hooks")
+    return(g)
+  }
+
+## Same as above but for spacing effect. Currently broken.
 plot.spacing.comparison <-
   function(fits){
     test <- ldply(1:length(fits), function(x)
@@ -166,7 +179,7 @@ make.inputs <- function(n_knots, model, form,
                  beta_month=rep(0, length(levels(df$month))),
                  beta_hooksize=rep(0, length(levels(df$hooksize))),
                  beta_depth=0,beta_depth2=0,
-                 beta_spacing=0.5, alpha_spacing=1, lambda=1,
+                 beta_spacing=0.5, lambda=1,
                  ln_tau_O=-.6, ln_tau_E=.25,
                  ln_kappa=.3,  ln_obs=-.2, ln_spacing=0,
                  ln_vessel=.1,
@@ -199,8 +212,7 @@ make.inputs <- function(n_knots, model, form,
   ## Turn off parameters for spacing depending on the form
   if(form==1) {
     ## random walk on spacing
-    xx <- list(beta_spacing=factor(NA), alpha_spacing=factor(NA),
-               lambda=factor(NA))
+    xx <- list(beta_spacing=factor(NA), lambda=factor(NA))
   }
   if(form==2) {
     ## H&S form on spacing
@@ -211,7 +223,7 @@ make.inputs <- function(n_knots, model, form,
     ## No effect (set to zero in the TMB model)
     xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
                ln_spacing=factor(NA), beta_spacing=factor(NA),
-               alpha_spacing=factor(NA), lambda=factor(NA))
+                lambda=factor(NA))
   }
   ## add vessels if needed
   if(!vessel_effect) xx <- c(xx, list(vessel_v=factor(rep(NA, length=Data$n_v))), list(ln_vessel=factor(NA)))
@@ -263,8 +275,10 @@ run.logbook <- function(n_knots, model, form, vessel_effect, likelihood=1, trace
   })
   sd.df$par <- as.character(sd.df$par)
   sd.df$par2 <- add.unique.names(sd.df$par)
-  sd.spacing <- sd.df[grep('hook_power', x=sd.df$par),]
+  sd.spacing <- sd.df[sd.df$par=='spacing',]
   sd.spacing$spacing <- seq_along(sd.spacing$par)
+  sd.hook_power <- sd.df[grep('hook_power', x=sd.df$par),]
+  sd.hook_power$hook_power <- seq_along(sd.hook_power$par)
   sd.cpue <- sd.df[grep('cph_t', x=sd.df$par),]
   sd.density <- sd.df[grep('area_weighted_density_t', x=sd.df$par),]
   sd.density$par <- paste0('density_', 1:n_years)
@@ -273,7 +287,7 @@ run.logbook <- function(n_knots, model, form, vessel_effect, likelihood=1, trace
   runtime <- as.numeric(difftime(Sys.time(),start, units='mins'))
   x <- list(model=model, n_knots=n_knots, form=form, likelihood=likelihood,
             model.name=model.name, form.name=form.name,
-            runtime=runtime, report=report.temp, sd.spacing=sd.spacing,
+            runtime=runtime, report=report.temp, sd.spacing=sd.spacing, sd.hook_power=sd.hook_power,
             sd.density=sd.density, sd.cpue=sd.cpue, sd.par=sd.par, Obj=Obj, Opt=Opt,
             Inits=Inputs$Params, Map=Inputs$Map, Random=Inputs$Random)
   return(x)
