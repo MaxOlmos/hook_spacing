@@ -109,7 +109,8 @@ Type objective_function<Type>::operator() ()
   vector<Type> hook_power(n_ft);
   for(int ft=0; ft<n_ft; ft++){
     // ft is again offset by 1 here, so ft=0 =>  spacing of 1ft
-    if(form==1) hook_power(ft)=exp(spacing(ft))/exp(spacing(17));
+    if(form==1)
+      hook_power(ft)=exp(spacing(ft))/exp(spacing(17));
     if(form==2) hook_power(ft)=spacing(ft)/spacing(17);
     if(form==3) hook_power(ft)=spacing(ft);
   }
@@ -188,10 +189,6 @@ Type objective_function<Type>::operator() ()
   REPORT(nll_epsilon);
   REPORT(nll_spacing);
   REPORT(nll_vessel);
-  REPORT(intercept);
-  REPORT(beta_depth);
-  REPORT(hook_power);
-  REPORT(spacing);
   REPORT(resids);
   REPORT(preds);
   if(form==2){
@@ -219,7 +216,8 @@ Type objective_function<Type>::operator() ()
   ADREPORT(SigmaE);		// space
   ADREPORT(SigmaO);		// spatiotemporal
   // Spacing and CPUE calcs
-  ADREPORT(hook_power);
+  ADREPORT(spacing); // before standardizing
+  ADREPORT(hook_power); // after standardizing
   ADREPORT(cph_t);
   ADREPORT(area_weighted_density_t);
   return jnll;
