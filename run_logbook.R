@@ -1,5 +1,6 @@
 ### ------------------------------------------------------------
 ## Step 1: read in and prep the data for this model
+source('startup.R')
 df.unfiltered <- readRDS(file='data/data_unfiltered.RDS')
 df.unfiltered$spacing <- round(df.unfiltered$spacing)
 df <- readRDS(file='data/data.RDS')
@@ -54,6 +55,18 @@ st <- run.logbook(n_knots=knots, model='ST', form=2, vessel=TRUE)
 g <- plot.parameter.comparison(list(ns,s,st),
      level.name='model', levels=c('NS', 'S', 'ST'))
 ggsave('plots/par_comparison_model.png')
+
+## Spacing effect for NS model
+knots <- 10
+ns1 <- run.logbook(n_knots=knots, model='NS', form=1, vessel=FALSE)
+ns2 <- run.logbook(n_knots=knots, model='NS', form=2, vessel=FALSE)
+ns3 <- run.logbook(n_knots=knots, model='NS', form=3, vessel=FALSE)
+g <- plot.parameter.comparison(list(ns1, ns2, ns3),
+     level.name='form', levels=c('Smoother', 'H&S', 'None'))
+ggsave('plots/par_comparison_model.png', g, width=12, height=6)
+g <- plot.spacing.comparison(fits=list(ns1, ns2, ns3))
+ggsave('plots/spacing_comparison.png', g, width=5, height=6)
+plot(df$spacing, ns2$report$resids, pch='.', col=rgb(0,0,0,.1))
 
 ## Spacing vs model!
 knots <- 1000

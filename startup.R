@@ -170,7 +170,7 @@ make.inputs <- function(n_knots, model, form,
                  ln_tau_O=-.6, ln_tau_E=.25,
                  ln_kappa=.3,  ln_obs=-.2, ln_spacing=0,
                  ln_vessel=.1,
-                 spacing_devs=rep(0, length=Data$n_ft),
+                 spacing_devs=c(1, rep(.1, length=Data$n_ft-1)),
                  vessel_v=rep(0, length=length(unique(Data$vessel))),
                  omega_s=rep(0,spde$mesh$n),
                  epsilon_st=matrix(0,nrow=nrow(Data$M0),ncol=Data$n_t))
@@ -236,15 +236,19 @@ run.logbook <- function(n_knots, model, form, vessel_effect, likelihood=1, trace
   start <- Sys.time()
   Inputs <- make.inputs(n_knots=n_knots, model=model, form=form,
                         vessel_effect=vessel_effect, likelihood=likelihood)
+  ## Inputs$Map$ln_spacing=factor(NA)
+  ## Inputs$Random=NULL
   Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                    random=Inputs$Random, map=Inputs$Map)
+
   Obj$env$beSilent()
   ## Set bounds for parameters via limits in optimizer
   lower <- rep(-Inf, len=length(unlist(Inputs$Params)))
   upper <- rep(Inf,  len=length(unlist(Inputs$Params)))
   names(upper) <- names(lower) <- names(unlist(Inputs$Params))
   lower['gamma'] <- 0; upper['gamma'] <- 1
-  Obj$fn()
+  Obj$fn(Obj$par)
+  Obj$gr()
 
   Opt <- nlminb(start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
                 lower=lower, upper=upper,
@@ -259,13 +263,13 @@ run.logbook <- function(n_knots, model, form, vessel_effect, likelihood=1, trace
   })
   sd.df$par <- as.character(sd.df$par)
   sd.df$par2 <- add.unique.names(sd.df$par)
-  sd.spacing <- sd.df[grep('spacing_std', x=sd.df$par),]
+  sd.spacing <- sd.df[grep('hook_power', x=sd.df$par),]
   sd.spacing$spacing <- seq_along(sd.spacing$par)
   sd.cpue <- sd.df[grep('cph_t', x=sd.df$par),]
   sd.density <- sd.df[grep('area_weighted_density_t', x=sd.df$par),]
   sd.density$par <- paste0('density_', 1:n_years)
   sd.cpue$year <- sd.density$year <- 1996:2015
-  sd.par <- sd.df[-grep('spacing_std|cph_t|area_weighted_density_t', x=sd.df$par),]
+  sd.par <- sd.df[-grep('hook_power|cph_t|area_weighted_density_t', x=sd.df$par),]
   runtime <- as.numeric(difftime(Sys.time(),start, units='mins'))
   x <- list(model=model, n_knots=n_knots, form=form, likelihood=likelihood,
             model.name=model.name, form.name=form.name,

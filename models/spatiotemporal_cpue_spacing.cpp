@@ -96,26 +96,35 @@ Type objective_function<Type>::operator() ()
   vector<Type> spacing(n_ft);
   // ft here is offset by -1 so ft=0 => spacing of 1ft
   for(int ft=0; ft<n_ft; ft++){
-    // Additive effect of hook spacing for a given foot
+    // smoother on effect of hook spacing for a given foot
     if(form==1) {
-      if(ft==0) spacing(ft)=spacing_devs(ft); // initialize at first dev
+      if(ft==0) spacing(ft)=0; // initialize at first dev
       else spacing(ft)=spacing(ft-1)+spacing_devs(ft);
     }
     // Multiplicative form used by H&S.
-    if(form==2) spacing(ft)=alpha_spacing*(1-pow(exp(-beta_spacing*(ft+1)), lambda));
-    if(form==3) spacing(ft)=0; // no effect
+    if(form==2) spacing(ft)=(1-pow(exp(-beta_spacing*(ft+1)), lambda));
+    if(form==3) spacing(ft)=1; // no effect
+  }
+  // Calculate relative hook power
+  vector<Type> hook_power(n_ft);
+  for(int ft=0; ft<n_ft; ft++){
+    // ft is again offset by 1 here, so ft=0 =>  spacing of 1ft
+    if(form==1) hook_power(ft)=exp(spacing(ft))/exp(spacing(17));
+    if(form==2) hook_power(ft)=spacing(ft)/spacing(17);
+    if(form==3) hook_power(ft)=spacing(ft);
   }
 
-  // The model predictions for each observation
+  // The model predicted catch for each observation, in natural space:
+  // catch=density*hook_power*hooks*catchability
   vector<Type> mu_i(n_i);
   for( int i=0; i<n_i; i++){
-    mu_i(i) = log(hooks_i(i))+spacing(spacing_i(i))+
-	intercept + beta_year(year_i(i)) +
-	 beta_month(month_i(i)) + beta_geartype(geartype_i(i)) +
-	 beta_hooksize(hooksize_i(i)) +
-	 beta_depth*depth_i(i) + beta_depth2*depth_i(i)*depth_i(i) +
-	 vessel_v(vessel_i(i))+
-	 omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i));
+    mu_i(i) = hooks_i(i)*hook_power(spacing_i(i)-1)*
+      exp(intercept + beta_year(year_i(i)) +
+	  beta_month(month_i(i)) + beta_geartype(geartype_i(i)) +
+	  beta_hooksize(hooksize_i(i)) +
+	  beta_depth*depth_i(i) + beta_depth2*depth_i(i)*depth_i(i) +
+	  vessel_v(vessel_i(i))+
+	  omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i)));
   }
 
   //// Probability of random effects
@@ -136,13 +145,13 @@ Type objective_function<Type>::operator() ()
   for( int i=0; i<n_i; i++){
     if(likelihood==1) // lognormal case; see top of file for function
       nll_likelihood -=
-	dlognorm(catch_i(i), mu_i(i), Sigma, true);
+	dlognorm(catch_i(i), log(mu_i(i)), Sigma, true);
     if(likelihood==2) // gamma case
       nll_likelihood -=
-    dgamma(catch_i(i), 1/pow(Sigma,2), exp(mu_i(i))*pow(Sigma,2), true);
+    dgamma(catch_i(i), 1/pow(Sigma,2), mu_i(i)*pow(Sigma,2), true);
     if(likelihood==3) // inverse gaussian
       nll_likelihood-=
-	dinvgauss(catch_i(i), exp(mu_i(i)), Sigma, true );
+	dinvgauss(catch_i(i), mu_i(i), Sigma, true );
   }
 
 
@@ -150,12 +159,6 @@ Type objective_function<Type>::operator() ()
   Type jnll = nll_likelihood+nll_omega+nll_epsilon+nll_spacing +nll_vessel;
 
   //// Derived quantities
-  // Standardized effect of spacing
-  vector<Type> spacing_std(n_ft);
-  for(int ft=0; ft<n_ft; ft++)
-    // ft is again offset by 1 here, so ft=0 =>  spacing of 1ft
-    if(form==3)spacing_std(ft)=spacing(ft);
-    else spacing_std(ft)=spacing(ft)/spacing(17);
   // catch per hook -- old way that doesn't make sense right now
   vector<Type> cph_t(n_t);
   for( int t=0; t<n_t; t++){
@@ -174,10 +177,10 @@ Type objective_function<Type>::operator() ()
   }
   // Pearson residuals; (pred-obs)/sd(pred)
   vector<Type> resids;
-  if(likelihood==1) resids=(mu_i-log(catch_i))/Sigma;
-  if(likelihood==2) resids=(exp(mu_i)-catch_i)/(Sigma*exp(mu_i));
-  if(likelihood==3) resids=(exp(mu_i)-catch_i)/(sqrt(exp(mu_i+mu_i+mu_i))/sqrt(Sigma));
-  vector<Type> preds = exp(mu_i);
+  if(likelihood==1) resids=(log(mu_i)-log(catch_i))/Sigma;
+  if(likelihood==2) resids=(mu_i-catch_i)/(Sigma*mu_i);
+  if(likelihood==3) resids=(mu_i-catch_i)/(sqrt(mu_i+mu_i+mu_i)/sqrt(Sigma));
+  vector<Type> preds = mu_i;
 
   //// Reporting
   REPORT(nll_likelihood);
@@ -187,7 +190,7 @@ Type objective_function<Type>::operator() ()
   REPORT(nll_vessel);
   REPORT(intercept);
   REPORT(beta_depth);
-  REPORT(spacing_std);
+  REPORT(hook_power);
   REPORT(spacing);
   REPORT(resids);
   REPORT(preds);
@@ -216,7 +219,7 @@ Type objective_function<Type>::operator() ()
   ADREPORT(SigmaE);		// space
   ADREPORT(SigmaO);		// spatiotemporal
   // Spacing and CPUE calcs
-  ADREPORT(spacing_std);
+  ADREPORT(hook_power);
   ADREPORT(cph_t);
   ADREPORT(area_weighted_density_t);
   return jnll;
