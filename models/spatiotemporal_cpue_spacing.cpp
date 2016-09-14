@@ -62,6 +62,7 @@ Type objective_function<Type>::operator() ()
   PARAMETER(beta_spacing);	   // from H&S formula
   //  PARAMETER(alpha_spacing);	   // from H&S formula
   PARAMETER(lambda);		   // from H&S formula
+  PARAMETER(spacing_0);		   // 1ft spacing effect for form=1
   // Variances
   PARAMETER(ln_tau_O);		  // spatial process
   PARAMETER(ln_tau_E);		  // spatio-temporal process
@@ -97,10 +98,10 @@ Type objective_function<Type>::operator() ()
   vector<Type> spacing(n_ft);
   // ft here is offset by -1 so ft=0 => spacing of 1ft
   for(int ft=0; ft<n_ft; ft++){
-    // smoother on effect of hook spacing for a given foot
+    // smoother on effect of hook spacing
     if(form==1) {
-      if(ft==0) spacing(ft)=0; // initialize at first dev
-      else spacing(ft)=spacing(ft-1)+spacing_devs(ft);
+      if(ft==0) spacing(ft)=exp(spacing_0); // initialize at first dev
+      else spacing(ft)=spacing(ft-1)*exp(spacing_devs(ft));
     }
     // Multiplicative form used by H&S. Note the alpha term gets merged
     // into the intercept and is left off here. Otherwise they are
@@ -111,11 +112,8 @@ Type objective_function<Type>::operator() ()
   // Calculate relative hook power
   vector<Type> hook_power(n_ft);
   for(int ft=0; ft<n_ft; ft++){
-    // ft is again offset by 1 here, so ft=0 =>  spacing of 1ft
-    if(form==1)
-      hook_power(ft)=exp(spacing(ft))/exp(spacing(17));
-    if(form==2) hook_power(ft)=spacing(ft)/spacing(17);
-    if(form==3) hook_power(ft)=spacing(ft);
+    if(form==3) hook_power(ft)=spacing(ft); else
+      hook_power(ft)=spacing(ft)/spacing(17);
   }
 
   // The model predicted catch for each observation, in natural space:
@@ -210,6 +208,7 @@ Type objective_function<Type>::operator() ()
   // ADREPORT(beta_hooksize); // hooksize effect
   ADREPORT(beta_depth);	   // linear depth effect
   ADREPORT(beta_depth2);   // quadratic depth effect
+  ADREPORT(spacing_0);
   ADREPORT(Sigma);	   	// observation
   // random effect variances
   Type Sigma_vessel=exp(ln_vessel);
