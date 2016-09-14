@@ -183,7 +183,7 @@ make.inputs <- function(n_knots, model, form,
                  ln_tau_O=-.6, ln_tau_E=.25,
                  ln_kappa=.3,  ln_obs=-.2, ln_spacing=0,
                  ln_vessel=.1,
-                 spacing_devs=c(1, rep(.1, length=Data$n_ft-1)),
+                 spacing_devs=rep(0, length=Data$n_ft),
                  vessel_v=rep(0, length=length(unique(Data$vessel))),
                  omega_s=rep(0,spde$mesh$n),
                  epsilon_st=matrix(0,nrow=nrow(Data$M0),ncol=Data$n_t))
