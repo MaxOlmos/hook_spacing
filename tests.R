@@ -35,3 +35,54 @@ for(n_knots in c(50, 100, 150, 200, 300, 400, 500, 600, 700, 800)){
     if(form==1) saveRDS(temp, file=paste0('results/logbook.re.', n_knots,'.RDS'))
     if(form==2) saveRDS(temp, file=paste0('results/logbook.hs.', n_knots,'.RDS'))
 }
+
+
+## Likelihoods
+knots <- 1000
+mlog <- run.logbook(n_knots=knots, model='NS', form=3, vessel=TRUE)
+mgam <- run.logbook(n_knots=knots, model='NS', form=3, vessel=TRUE, likelihood=2)
+minvg <- run.logbook(n_knots=knots, model='NS', form=3, vessel=TRUE, likelihood=3)
+fits <- list(mlog, mgam, minvg)
+temp <- ldply(1:length(fits), function(x)
+  data.frame(likelihood=fits[[x]]$likelihood, form=fits[[x]]$form,
+             resids=fits[[x]]$report$resids, preds=fits[[x]]$report$preds))
+temp$likelihood <- factor(temp$likelihood, labels=c('Lognormal', 'Gamma', 'Inverse Gaussian'))
+g <- ggplot(temp, aes(preds, resids)) + geom_point(alpha=.1, size=.1) +
+  xlab('Predicted Catch') + ylab('Pearson Residual') + facet_wrap('likelihood') +
+  scale_x_log10() + ylim(-5,5) + theme_bw() + geom_hline(yintercept=0)
+ggsave('plots/outliers_normal.png', g, width=map.width, height=map.height)
+df.temp <- df
+df.temp$resids=mlog$report$resids
+g <- ggplot(droplevels(subset(df.temp, abs(resids)>4)),
+            aes(longitude, latitude, color=geartype)) +
+  geom_point(alpha=.7) + ggtitle('Lognormal model: Pearson residuals > 4')
+rm(df.temp)
+ggsave('plots/map_outliers_normal.png', g, width=map.width, height=map.height)
+g <- plot.parameter.comparison(fits,
+     level.name='likelihood', levels=c('Lognormal', 'Gamma', 'Inv. Gaussian'))
+ggsave('plots/par_comparison_likelihood.png', g, width=ggwidth, height=ggheight)
+
+## Vessel effect
+knots <- 1000
+v0 <- run.logbook(n_knots=knots, model='ST', form=2, vessel_effect=FALSE, trace=10)
+v1 <- run.logbook(n_knots=knots, model='ST', form=2, vessel_effect=TRUE, trace=10)
+plot.parameter.comparison(list(v0, v1),
+     level.name='vessel', levels=c('No Vessels', 'Vessel Effect'))
+ggsave('plots/par_comparison_vessel.png')
+png('plots/vessel_qqplots.png', res=500, units='in', width=14, height=8)
+par(mfrow=c(1,2))
+with(v0$report, {qqnorm(resids, main='No vessel effect'); qqline(resids)})
+with(v1$report, {qqnorm(resids, main='Vessel effect'); qqline(resids)})
+dev.off()
+
+## Data filtering
+knots <- 1000
+d1 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=FALSE)
+df.temp <- df
+df <- df.unfiltered
+d2 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=FALSE)
+g <- plot.parameter.comparison(list(d1,d2),
+     level.name='data', levels=c('Filtered', 'Unfiltered'))
+ggsave('plots/par_comparison_data.png', g, width=8, height=6)
+df <- df.temp
+rm(df.unfiltered, df.temp)

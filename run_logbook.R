@@ -1,5 +1,6 @@
 ### ------------------------------------------------------------
 ## Step 1: read in and prep the data for this model
+source('startup.R')
 df.unfiltered <- readRDS(file='data/data_unfiltered.RDS')
 df.unfiltered$spacing <- round(df.unfiltered$spacing)
 df <- readRDS(file='data/data.RDS')
@@ -21,31 +22,6 @@ dyn.load( dynlib(Version))
 
 ### Explore effects of key dimensions.
 
-## Likelihoods
-knots <- 1000
-mlog <- run.logbook(n_knots=knots, model='NS', form=3, vessel=TRUE)
-mgam <- run.logbook(n_knots=knots, model='NS', form=3, vessel=TRUE, likelihood=2)
-minvg <- run.logbook(n_knots=knots, model='NS', form=3, vessel=TRUE, likelihood=3)
-fits <- list(mlog, mgam, minvg)
-temp <- ldply(1:length(fits), function(x)
-  data.frame(likelihood=fits[[x]]$likelihood, form=fits[[x]]$form,
-             resids=fits[[x]]$report$resids, preds=fits[[x]]$report$preds))
-temp$likelihood <- factor(temp$likelihood, labels=c('Lognormal', 'Gamma', 'Inverse Gaussian'))
-g <- ggplot(temp, aes(preds, resids)) + geom_point(alpha=.1, size=.1) +
-  xlab('Predicted Catch') + ylab('Pearson Residual') + facet_wrap('likelihood') +
-  scale_x_log10() + ylim(-5,5) + theme_bw() + geom_hline(yintercept=0)
-ggsave('plots/outliers_normal.png', g, width=map.width, height=map.height)
-df.temp <- df
-df.temp$resids=mlog$report$resids
-g <- ggplot(droplevels(subset(df.temp, abs(resids)>4)),
-            aes(longitude, latitude, color=geartype)) +
-  geom_point(alpha=.7) + ggtitle('Lognormal model: Pearson residuals > 4')
-rm(df.temp)
-ggsave('plots/map_outliers_normal.png', g, width=map.width, height=map.height)
-g <- plot.parameter.comparison(fits,
-     level.name='likelihood', levels=c('Lognormal', 'Gamma', 'Inv. Gaussian'))
-ggsave('plots/par_comparison_likelihood.png', g, width=ggwidth, height=ggheight)
-
 ## Spatial effect
 knots <- 1000
 ns <- run.logbook(n_knots=knots, model='NS', form=2, vessel=TRUE)
@@ -54,6 +30,20 @@ st <- run.logbook(n_knots=knots, model='ST', form=2, vessel=TRUE)
 g <- plot.parameter.comparison(list(ns,s,st),
      level.name='model', levels=c('NS', 'S', 'ST'))
 ggsave('plots/par_comparison_model.png')
+
+## Spacing effect for NS model
+knots <- 10
+ns1 <- run.logbook(n_knots=knots, model='NS', form=1, vessel=FALSE)
+ns2 <- run.logbook(n_knots=knots, model='NS', form=2, vessel=FALSE)
+ns3 <- run.logbook(n_knots=knots, model='NS', form=3, vessel=FALSE)
+g <- plot.parameter.comparison(list(ns1, ns2, ns3),
+     level.name='form', levels=c('Smoother', 'H&S', 'None'))
+ggsave('plots/par_comparison_model.png', g, width=12, height=6)
+g <- plot.spacing.comparison(fits=list(ns1, ns2, ns3))
+ggsave('plots/spacing_comparison.png', g, width=5, height=6)
+g <- plot.power.comparison(fits=list(ns1, ns2, ns3))
+ggsave('plots/power_comparison.png', g, width=5, height=6)
+## plot(df$spacing, ns2$report$resids, pch='.', col=rgb(0,0,0,.1))
 
 ## Spacing vs model!
 knots <- 1000
@@ -78,42 +68,6 @@ g <- plot.spacing.comparison(fits=fits)
 ggsave('plots/spacing_comparison.png', g, width=5, height=6)
 g <- plot.resids.comparison(fits=fits)
 ggsave('plots/resids_comparison.png', g, width=5, height=6)
-
-## Vessel effect
-knots <- 1000
-v0 <- run.logbook(n_knots=knots, model='ST', form=2, vessel_effect=FALSE, trace=10)
-v1 <- run.logbook(n_knots=knots, model='ST', form=2, vessel_effect=TRUE, trace=10)
-plot.parameter.comparison(list(v0, v1),
-     level.name='vessel', levels=c('No Vessels', 'Vessel Effect'))
-ggsave('plots/par_comparison_vessel.png')
-png('plots/vessel_qqplots.png', res=500, units='in', width=14, height=8)
-par(mfrow=c(1,2))
-with(v0$report, {qqnorm(resids, main='No vessel effect'); qqline(resids)})
-with(v1$report, {qqnorm(resids, main='Vessel effect'); qqline(resids)})
-dev.off()
-
-## Data filtering
-knots <- 1000
-d1 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=FALSE)
-df.temp <- df
-df <- df.unfiltered
-d2 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=FALSE)
-g <- plot.parameter.comparison(list(d1,d2),
-     level.name='data', levels=c('Filtered', 'Unfiltered'))
-ggsave('plots/par_comparison_data.png', g, width=8, height=6)
-df <- df.temp
-rm(df.unfiltered, df.temp)
-
-
-
-
-
-## Run ST model with and without the HS formula with high resolution
-for(form in 1:2){
-    temp <- run.logbook(n_knots=400, model='ST', form=form, trace=10)
-    if(form==1) saveRDS(temp, file='results/logbook.re.results.RDS')
-    if(form==2) saveRDS(temp, file='results/logbook.hs.results.RDS')
-}
 
 ## Cleanup
 dyn.unload( dynlib(Version))
