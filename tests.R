@@ -90,14 +90,15 @@ rm(df.unfiltered, df.temp)
 ## Simulate some simple data without effects for anything except spacing
 ## to make sure the model recovers it
 beta <- 0.08
-lambda <- 20
+lambda <- .1
 max_ehook <- 1/(1-exp(-18*beta)^lambda)
-df$catch <- with(df, hooks*(1-exp(-beta*spacing)^lambda)*max_ehook*exp(.5)*exp(rnorm(nrow(df), 0,.1)))
+df$catch <- with(df, hooks*(1-exp(-beta*spacing)^lambda)*max_ehook*exp(.5)*exp(rnorm(nrow(df), 0,.8)))
 knots <- 10
 sim1 <- run.logbook(n_knots=knots, model='NS', form=1, vessel=FALSE)
 sim2 <- run.logbook(n_knots=knots, model='NS', form=2, vessel=FALSE)
 sim3 <- run.logbook(n_knots=knots, model='NS', form=3, vessel=FALSE)
 g <- plot.parameter.comparison(list(sim1, sim2, sim3),
      level.name='form', levels=c('Smoother', 'H&S', 'None'))
+g
 g <- plot.power.comparison(fits=list(sim1, sim2, sim3))
-
+g
