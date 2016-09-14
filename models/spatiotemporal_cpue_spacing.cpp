@@ -92,6 +92,7 @@ Type objective_function<Type>::operator() ()
   Type Sigma = exp(ln_obs);
   Eigen::SparseMatrix<Type>
     Q = exp(4*ln_kappa)*M0 + Type(2.0)*exp(2*ln_kappa)*M1 + M2;
+
   // Calculate the spacing effects by foot (random effects)
   vector<Type> spacing(n_ft);
   // ft here is offset by -1 so ft=0 => spacing of 1ft
@@ -101,7 +102,9 @@ Type objective_function<Type>::operator() ()
       if(ft==0) spacing(ft)=0; // initialize at first dev
       else spacing(ft)=spacing(ft-1)+spacing_devs(ft);
     }
-    // Multiplicative form used by H&S.
+    // Multiplicative form used by H&S. Note the alpha term gets merged
+    // into the intercept and is left off here. Otherwise they are
+    // confounded.
     if(form==2) spacing(ft)=(1-pow(exp(-beta_spacing*(ft+1)), lambda));
     if(form==3) spacing(ft)=1; // no effect
   }
@@ -120,12 +123,12 @@ Type objective_function<Type>::operator() ()
   vector<Type> mu_i(n_i);
   for( int i=0; i<n_i; i++){
     mu_i(i) = hooks_i(i)*hook_power(spacing_i(i)-1)*
+      // density
       exp(intercept + beta_year(year_i(i)) +
-	  beta_month(month_i(i)) + beta_geartype(geartype_i(i)) +
-	  beta_hooksize(hooksize_i(i)) +
 	  beta_depth*depth_i(i) + beta_depth2*depth_i(i)*depth_i(i) +
-	  vessel_v(vessel_i(i))+
-	  omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i)));
+	  omega_s(s_i(i)) + epsilon_st(s_i(i),year_i(i)))*
+      // catchability
+      exp(beta_geartype(geartype_i(i)) + vessel_v(vessel_i(i)));
   }
 
   //// Probability of random effects
