@@ -62,7 +62,6 @@ plot.parameter.comparison <- function(fits, level.name, levels){
   return(g)
 }
 
-
 ## Same as above but for spacing effect. Currently broken.
 plot.power.comparison <-
   function(fits){
@@ -70,21 +69,8 @@ plot.power.comparison <-
       cbind(model=fits[[x]]$model.name, form=fits[[x]]$form.name, fits[[x]]$sd.hook_power))
     g <- ggplot(test, aes(hook_power, value, fill=model, col=model,
                           ymin=lwr, ymax=upr)) +
-
-  geom_ribbon(lwd=1, alpha=1/3) + facet_grid(form~.) +
-      geom_vline(xintercept=18) + geom_line(lwd=1) + ylab("Effective Hooks")
-    return(g)
-  }
-
-## Same as above but for spacing effect. Currently broken.
-plot.spacing.comparison <-
-  function(fits){
-    test <- ldply(1:length(fits), function(x)
-      cbind(model=fits[[x]]$model.name, form=fits[[x]]$form.name, fits[[x]]$sd.spacing))
-    g <- ggplot(test, aes(spacing, value, fill=model, col=model,
-                          ymin=lwr, ymax=upr)) +
       geom_ribbon(lwd=1, alpha=1/3) + facet_grid(form~.) +
-      geom_vline(xintercept=18) + geom_line(lwd=1) + ylab("Effective Hooks")
+      geom_vline(xintercept=18) + geom_line(lwd=1) + ylab("Hook Power")
     return(g)
   }
 

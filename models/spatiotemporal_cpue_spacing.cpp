@@ -216,7 +216,6 @@ Type objective_function<Type>::operator() ()
   ADREPORT(SigmaE);		// space
   ADREPORT(SigmaO);		// spatiotemporal
   // Spacing and CPUE calcs
-  ADREPORT(spacing); // before standardizing
   ADREPORT(hook_power); // after standardizing
   ADREPORT(cph_t);
   ADREPORT(area_weighted_density_t);
