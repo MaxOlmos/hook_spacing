@@ -105,3 +105,34 @@ g <- plot.parameter.comparison(list(sim1, sim2),
 g
 g <- plot.power.comparison(fits=list(sim1, sim2))
 g
+
+
+
+## Spatial effect
+knots <- 1000
+ns <- run.logbook(n_knots=knots, model='NS', form=2, vessel=TRUE)
+s <- run.logbook(n_knots=knots, model='S', form=2, vessel=TRUE)
+st <- run.logbook(n_knots=knots, model='ST', form=2, vessel=TRUE)
+fits.model <- list(ns,s,st)
+saveRDS(fits.model, file='results/fits.model.RDS')
+fits.model <- readRDS('results/fits.model.RDS')
+g <- plot.parameter.comparison(fits.model,
+     level.name='model', levels=c('NS', 'S', 'ST'))
+ggsave('plots/par_comparison_model.png')
+
+## Spacing effect for NS model
+knots <- 10
+ns1 <- run.logbook(n_knots=knots, model='NS', form=1, vessel=FALSE)
+ns2 <- run.logbook(n_knots=knots, model='NS', form=2, vessel=FALSE)
+ns3 <- run.logbook(n_knots=knots, model='NS', form=3, vessel=FALSE)
+fits.spacing <- list(ns1,ns2,ns3)
+saveRDS(fits.spacing, file='results/fits.spacing.RDS')
+fits.spacing <- readRDS('results/fits.spacing.RDS')
+g <- plot.parameter.comparison(fits.spacing,
+     level.name='form', levels=c('Smoother', 'H&S', 'None'))
+ggsave('plots/par_comparison_model.png', g, width=12, height=6)
+g <- plot.spacing.comparison(fits.spacing)
+ggsave('plots/spacing_comparison.png', g, width=5, height=6)
+g <- plot.power.comparison(fits.spacing)
+ggsave('plots/power_comparison.png', g, width=5, height=6)
+## plot(df$spacing, ns2$report$resids, pch='.', col=rgb(0,0,0,.1))
