@@ -229,6 +229,7 @@ make.inputs <- function(n_knots, model, form,
 }
 
 run.logbook <- function(n_knots, model, form, vessel_effect, likelihood=1, trace=10){
+  n_years <- length(unique(df$year))
   model.name <- switch(model, NS="No-Space", S='Space',
                        ST='Spatiotemporal')
   form.name <-  c('Non-parametric', 'Hamley and Skud', 'None')[form]

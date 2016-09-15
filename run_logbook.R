@@ -8,7 +8,6 @@ df$spacing <- round(df$spacing)
 ## df.simulated <- df
 ## df.simulated$catch <- with(df, hooks*exp(-.1+rnorm(n=nrow(df), mean=0, sd=.1)))
 ## df <- df.simulated
-n_years <- length(unique(df$year))
 Version <- "models/spatiotemporal_cpue_spacing"
 clean.TMB.files(Version)
 compile( paste0(Version,".cpp"))
