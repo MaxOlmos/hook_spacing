@@ -236,20 +236,14 @@ run.logbook <- function(n_knots, model, form, vessel_effect, likelihood=1, trace
   start <- Sys.time()
   Inputs <- make.inputs(n_knots=n_knots, model=model, form=form,
                         vessel_effect=vessel_effect, likelihood=likelihood)
-  ## Inputs$Map$ln_spacing=factor(NA)
-  ## Inputs$Random=NULL
   Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                    random=Inputs$Random, map=Inputs$Map)
-
   Obj$env$beSilent()
   ## Set bounds for parameters via limits in optimizer
   lower <- rep(-Inf, len=length(unlist(Inputs$Params)))
   upper <- rep(Inf,  len=length(unlist(Inputs$Params)))
   names(upper) <- names(lower) <- names(unlist(Inputs$Params))
-  lower['gamma'] <- 0; upper['gamma'] <- 1
-  Obj$fn(Obj$par)
-  Obj$gr()
-
+  lower['gamma'] <- 0; upper['gamma'] <- 5
   Opt <- nlminb(start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
                 lower=lower, upper=upper,
                 control=list(trace=trace, eval.max=1e4, iter.max=1e4 ))
@@ -259,12 +253,14 @@ run.logbook <- function(n_knots, model, form, vessel_effect, likelihood=1, trace
   sd.df <- within(sd.df,{
     upr <- value+1.96*sd
     lwr <- value-1.96*sd
-    table <- paste0(round(value,3), ' (',round(lwr,3), '-', round(upr,3),')')
+    table <- paste0(format(value,digits=3, scientific=TRUE),
+                  ' (',format(lwr,digits=3, sci=TRUE), '-',
+                  format(upr,digits=3, sci=TRUE),')')
   })
   sd.df$par <- as.character(sd.df$par)
   sd.df$par2 <- add.unique.names(sd.df$par)
-  sd.spacing <- sd.df[sd.df$par=='spacing',]
-  sd.spacing$spacing <- seq_along(sd.spacing$par)
+  ## sd.spacing <- sd.df[sd.df$par=='spacing',]
+  ## sd.spacing$spacing <- seq_along(sd.spacing$par)
   sd.hook_power <- sd.df[grep('hook_power', x=sd.df$par),]
   sd.hook_power$hook_power <- seq_along(sd.hook_power$par)
   sd.cpue <- sd.df[grep('cph_t', x=sd.df$par),]
@@ -272,10 +268,16 @@ run.logbook <- function(n_knots, model, form, vessel_effect, likelihood=1, trace
   sd.density$par <- paste0('density_', 1:n_years)
   sd.cpue$year <- sd.density$year <- 1996:2015
   sd.par <- sd.df[-grep('hook_power|cph_t|area_weighted_density_t', x=sd.df$par),]
+  ## This is the order of pars I want to output for easy conversion into a table.
+  table.pars <-
+    c('intercept', 'beta_depth', 'beta_depth2', 'beta_geartype', 'Sigma',
+                'Sigma_vessel', 'Range', 'SigmaE', 'SigmaO')
+  sd.table <- subset(sd.par, par %in% table.pars, select=c(par, table))
   runtime <- as.numeric(difftime(Sys.time(),start, units='mins'))
   x <- list(model=model, n_knots=n_knots, form=form, likelihood=likelihood,
             model.name=model.name, form.name=form.name,
-            runtime=runtime, report=report.temp, sd.spacing=sd.spacing, sd.hook_power=sd.hook_power,
+            runtime=runtime, report=report.temp,
+                sd.hook_power=sd.hook_power, sd.table=sd.table,
             sd.density=sd.density, sd.cpue=sd.cpue, sd.par=sd.par, Obj=Obj, Opt=Opt,
             Inits=Inputs$Params, Map=Inputs$Map, Random=Inputs$Random)
   return(x)
