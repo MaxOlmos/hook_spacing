@@ -329,3 +329,25 @@ plot.spacing.fit <- function(results, multiple.fits=FALSE){
   if(multiple.fits) g <-  g+facet_grid(model+likelihood~form)
   g
 }
+
+make.inputs.experimental <- function(hs){
+  Data <-
+    list(n_i=nrow(hs), n_s=length(unique(hs$group)),
+         catch_i=hs$catch, hooks_i=hs$hooks, day_i=hs$daynumber,
+         spacing_i=hs$spacing, site_i=hs$group-1)
+  Params <-
+    list(eta_mean=.3, eta_sd=.1, sigma_mean=.5, sigma_sd=.2,
+         gamma=0.05, beta=.05, lambda=1,
+         eta_s=rep(.3, len=Data$n_s), sigma_s=rep(.5,len=Data$n_s))
+  Map <- list(lambda=factor(NA))          # can't estimate this so fix at 1
+  ## Set bounds for parameters via limits in optimizer
+  lower <- rep(-Inf, len=length(unlist(Params)))
+  upper <- rep(Inf,  len=length(unlist(Params)))
+  names(upper) <- names(lower) <- names(unlist(Params))
+  lower['gamma'] <- 0; upper['gamma'] <- 1
+  lower['lambda'] <- 0; upper['lambda'] <- 5
+  lower['eta_sd'] <- 0; upper['eta_sd'] <- Inf
+  lower['sigma_sd'] <- 0; upper['sigma_sd'] <- Inf
+  Random <- c('eta_s', 'sigma_s')
+  Inputs <- list(Data=Data, Params=Params, Random=Random, Map=Map, Lower=lower, Upper=upper)
+}
