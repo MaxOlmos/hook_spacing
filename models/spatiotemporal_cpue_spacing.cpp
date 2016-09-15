@@ -120,7 +120,9 @@ Type objective_function<Type>::operator() ()
   // catch=density*hook_power*hooks*catchability
   vector<Type> mu_i(n_i);
   for( int i=0; i<n_i; i++){
-    mu_i(i) = hooks_i(i)*hook_power(spacing_i(i)-1)*
+    mu_i(i) =
+      // effective hooks
+      hooks_i(i)*spacing(spacing_i(i)-1)*
       // density
       exp(intercept + beta_year(year_i(i)) +
 	  beta_depth*depth_i(i) + beta_depth2*depth_i(i)*depth_i(i) +
