@@ -21,6 +21,7 @@ dyn.load( dynlib(Version) )
 ## Make object and optimize
 Obj <- with(Inputs, MakeADFun(data=Data, parameters=Params,
                  random=Random, map=Map))
+Obj$par
 Obj$env$beSilent()
 Opt <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
                control=list(trace=10, eval.max=1e4, iter.max=1e4),

@@ -47,5 +47,6 @@ hs.results <- readRDS('results/empirical.results.RDS')
 hs.table <- hs.results$sd.df
 hs.table$table <- with(hs.table,
        paste0(formatC(value,  width=3, digits=3), " (", formatC(sd, width=3,digits=3),  ")"))
+hs.table <- hs.table[, c('par', 'table')]
 write.table(x=hs.table, 'results/table_experimental.csv',
             row.names=FALSE, sep=",")
