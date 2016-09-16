@@ -5,6 +5,11 @@ source('startup.R')
 ## df.unfiltered$spacing <- round(df.unfiltered$spacing)
 df <- readRDS(file='data/data.RDS')
 df$spacing <- round(df$spacing)
+## df.temp <- ddply(df, .(geartype, year), summarize,
+##                        total.catch=sum(catch))
+## df.summarized <- ddply(df.temp, .(year), mutate, pct.catch=total.catch/sum(total.catch))
+## saveRDS(df.summarized, file='results/df.summarized.RDS')
+
 ## df.simulated <- df
 ## df.simulated$catch <- with(df, hooks*exp(-.1+rnorm(n=nrow(df), mean=0, sd=.1)))
 ## df <- df.simulated
