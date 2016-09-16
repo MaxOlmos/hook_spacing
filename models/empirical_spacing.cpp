@@ -1,3 +1,5 @@
+//// Reanalysis of the Hamley and Skud (1978) data for hook spacing
+//// experiments
 
 #include <TMB.hpp>
 // lognormal density
@@ -8,36 +10,30 @@ Type dlognorm(Type x, Type meanlog, Type sdlog, int give_log=0){
   if(give_log) return logres; else return exp(logres);
 }
 
-// Function for detecting NAs
-template<class Type>
-bool isNA(Type x){
-  return R_IsNA(asDouble(x));
-}
-
-// Model code
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
   // Data inputs
-  DATA_VECTOR(log_yobs); 	// the response variable
-  DATA_INTEGER(Ngroup); // number of groups
-  DATA_INTEGER(Nobs);	// number of observations
-  DATA_VECTOR(day);	// day relative to start of fishing
-  DATA_VECTOR(spacing);	// the independent variable spacing (ft)
-  DATA_IVECTOR(group);	// index for group
+  DATA_INTEGER(n_s);		// number of sites
+  DATA_INTEGER(n_i);		// number of observations
+  DATA_VECTOR(catch_i); 	// the response variable
+  DATA_VECTOR(hooks_i);		// number of hooks
+  DATA_VECTOR(day_i);		// day relative to start of fishing
+  DATA_VECTOR(spacing_i);	// the independent variable spacing (ft)
+  DATA_IVECTOR(site_i);		// index for site
 
   // Fixed effects
-  PARAMETER(logcpue_mean);	   // Mean CPUE (asymptote)
-  PARAMETER(logcpue_sd);	   // SD of mean CPUE
-  PARAMETER(sigma_obs_mean);	   // mean Obs error, log scale
-  PARAMETER(sigma_obs_sd);	   // sd of obs errors, log scale
-  PARAMETER(gamma);		   // Impact of day, bounded (0,1)
-  PARAMETER(beta);		   // non-linear effect of spacing
-  PARAMETER(lambda);		   // exponent that controls non-linearity
+  PARAMETER(eta_mean);		// Mean density*q*alpha
+  PARAMETER(eta_sd);		// SD of mean density
+  PARAMETER(sigma_mean);	// mean Obs error
+  PARAMETER(sigma_sd);		// sd of obs errors
+  PARAMETER(gamma);		// Impact of day, bounded (0,1)
+  PARAMETER(beta);		// non-linear effect of spacing
+  PARAMETER(lambda);		// exponent that controls non-linearity = 1
 
   // Random effects
-  PARAMETER_VECTOR(logcpue);	  // site level random effects for logcpue
-  PARAMETER_VECTOR(logsigma_obs); // observation error at each site
+  PARAMETER_VECTOR(eta_s);	  // site level random effects for logcpue
+  PARAMETER_VECTOR(sigma_s); // observation error at each site
 
   // Objective function and bookkeeping
   using namespace density;
@@ -45,52 +41,48 @@ Type objective_function<Type>::operator() ()
   // jnll_comp.setZero();		// initialize at zero
   Type jnll=0;
 
-  // Derived quantities
-  vector<Type> sigma_obs(Ngroup);
-  vector<Type> cpue(Ngroup);
-  for(int i=0; i<Ngroup; i++){
-    cpue(i)=exp(logcpue(i));
-    sigma_obs(i)=exp(logsigma_obs(i));
-  }
-  // alpha tilde in paper
-  Type max_ehook = 1/(1-pow(exp(-18*beta), lambda));
 
-  // The model predictions for each observation
-  vector<Type> ypred_i(Nobs);
-  for( int i=0; i<Nobs; i++){
-    ypred_i(i) = cpue(group(i))*exp(-day(i)*gamma)*(1-pow(exp(-beta*spacing(i)),lambda));
+  // Predicted catches
+  vector<Type> mu_i(n_i);
+  for( int i=0; i<n_i; i++){
+    mu_i(i) =
+      // spacing
+      (1-pow(exp(-beta*spacing_i(i)),lambda))*
+      // hooks
+      hooks_i(i)*
+      // site level density
+      exp(eta_s(site_i(i))-day_i(i)*gamma);
   }
 
-  // Probability of random effects on group
-  for(int i=0; i<Ngroup; i++){
-    jnll-= dnorm(logcpue_mean, logcpue(i), logcpue_sd, true);
-    jnll-= dnorm(sigma_obs_mean, logsigma_obs(i), sigma_obs_sd, true);
+  // Probability of random effects on site
+  for(int s=0; s<n_s; s++){
+    jnll-= dnorm(eta_mean, eta_s(s), eta_sd, true);
+    jnll-= dnorm(sigma_mean, sigma_s(s), sigma_sd, true);
   }
   // Probability of the data, given random effects (likelihood)
-  for( int i=0; i<Nobs; i++){
-    jnll-= dnorm(log(ypred_i(i)), log_yobs(i), sigma_obs(group(i)), true );
+  for( int i=0; i<n_i; i++){
+    Type test=10;
+    jnll-= dlognorm(catch_i(i), log(mu_i(i)) , sigma_s(site_i(i)), true );
   }
 
   // Reporting
-  vector<Type> spacing_pred(70);
-  vector<Type> ehook(70);
+  // alpha tilde in paper
+  Type max_ehook = 1/(1-pow(exp(-18*beta), lambda));
+  vector<Type> hook_power(70);
   for(int i=0; i<70; i++){
-    // predict spacing effect for day=0 and mean group level
-    spacing_pred(i)= exp(logcpue_mean)*(1-pow(exp(-beta*(i+1)),lambda));
+    // predict spacing effect for day=0 and mean site level
+    hook_power(i)=
+      (1-pow(exp(-beta*(i+1)),lambda))/ (1-pow(exp(-beta*18),lambda));
   }
-  for(int i=0; i<70; i++){
-    ehook(i)= max_ehook*(1-exp(-beta*(i+1)));
-  }
-  ADREPORT(ehook);
+  REPORT(mu_i);
+  ADREPORT(hook_power);
   ADREPORT(beta);
   ADREPORT(gamma);
   ADREPORT(lambda);
   ADREPORT(max_ehook);
-  ADREPORT(logcpue_mean);
-  ADREPORT(logcpue_sd);
-  Type sigma_obs_mean_exp=exp(sigma_obs_mean);
-  Type sigma_obs_sd_exp=exp(sigma_obs_sd);
-  ADREPORT(sigma_obs_mean_exp);
-  ADREPORT(sigma_obs_sd_exp);
+  ADREPORT(sigma_mean);
+  ADREPORT(sigma_sd);
+  ADREPORT(eta_mean);
+  ADREPORT(eta_sd);
   return jnll;
 }
