@@ -97,7 +97,7 @@ plot.resids.comparison <- function(fits){
 
 
 ## Create mesh from real data
-create.spde <- function(n_knots, make.plot=FALSE){
+create.spde <- function(n_knots, make.plot=FALSE, jitter=.3){
   ## df is used gobally here, so be careful
   loc_xy <- data.frame(x=df$longitude, y=df$latitude)
   knots <- kmeans( x=loc_xy, centers=n_knots )
@@ -110,7 +110,7 @@ create.spde <- function(n_knots, make.plot=FALSE){
     png(paste0('plots/mesh_', n_knots, '.png'), width=7, height=4, units='in', res=500)
     par(mar=.5*c(1,1,1,1))
     plot(mesh, main=NA, edge.color=gray(.7))
-    points( df$longitude, df$latitude, cex=1, pch='.', col=rgb(0,0,0,.3))
+    points( jitter(df$longitude, amount=jitter), jitter(df$latitude, amount=jitter), cex=1, pch='.', col=rgb(0,0,0,.3))
     points( loc_centers, cex=.5, pch=20, col="red")
     dev.off()
   }
@@ -228,11 +228,15 @@ make.inputs <- function(n_knots, model, form,
   return(list(Data=Data, Params=Params, Random=Random[[model]], Map=Map[[model]]))
 }
 
+model.name <- function(model) switch(model, NS="No-Space", S='Space',
+                       ST='Spatiotemporal')
+form.name <- function(form)  c('Non-parametric', 'Hamley and Skud', 'None')[form]
+
+
 run.logbook <- function(n_knots, model, form, vessel_effect, likelihood=1, trace=10){
   n_years <- length(unique(df$year))
-  model.name <- switch(model, NS="No-Space", S='Space',
-                       ST='Spatiotemporal')
-  form.name <-  c('Non-parametric', 'Hamley and Skud', 'None')[form]
+  model.name <- model.name(model)
+  form.name <- form.name(form)
   start <- Sys.time()
   Inputs <- make.inputs(n_knots=n_knots, model=model, form=form,
                         vessel_effect=vessel_effect, likelihood=likelihood)

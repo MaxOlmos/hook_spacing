@@ -37,5 +37,4 @@ saveRDS(empirical.results, file='results/empirical.results.RDS')
 
 ## Clean up
 dyn.unload(dynlib(Version))
-rm(Obj, Opt, temp, uncertainty.df, empirical.results, lower, upper,
-   Version, Params)
+rm(Obj, Opt, temp, uncertainty.df, empirical.results, Inputs)
