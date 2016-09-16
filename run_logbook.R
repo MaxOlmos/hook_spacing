@@ -1,8 +1,8 @@
 ### ------------------------------------------------------------
 ## Step 1: read in and prep the data for this model
 source('startup.R')
-df.unfiltered <- readRDS(file='data/data_unfiltered.RDS')
-df.unfiltered$spacing <- round(df.unfiltered$spacing)
+## df.unfiltered <- readRDS(file='data/data_unfiltered.RDS')
+## df.unfiltered$spacing <- round(df.unfiltered$spacing)
 df <- readRDS(file='data/data.RDS')
 df$spacing <- round(df$spacing)
 ## df.simulated <- df
@@ -33,7 +33,6 @@ form8 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=TRUE)
 form9 <- run.logbook(n_knots=knots, model='ST', form=3, vessel=TRUE)
 fits.all <- list(form1, form2, form3, form4, form5, form6, form7, form8, form9)
 saveRDS(fits.all, file='results/fits.all.RDS')
-fits.all <- readRDS('results/fits.all.RDS')
 ## Make quick plots
 g <- plot.parameter.comparison(fits=fits.all[[c(7,8,9)]],
  level.name='model', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
@@ -44,6 +43,7 @@ g <- plot.spacing.comparison(fits.all)
 ggsave('plots/spacing_comparison.png', g, width=5, height=6)
 g <- plot.resids.comparison(fits.all)
 ggsave('plots/resids_comparison.png', g, width=5, height=6)
+
 
 ## Cleanup
 dyn.unload( dynlib(Version))

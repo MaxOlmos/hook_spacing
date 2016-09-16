@@ -1,5 +1,30 @@
 ## This file loads the data, makes plots, tables and figures.
 
+
+g <- ggplot(df.summarized, aes(year, pct.catch, group=geartype, fill=geartype)) +
+  geom_area() + ylab("Proportion Catch") + coord_flip()
+ggsave('plots/proportion_geartype.png', g, width=ggwidth, height=ggheight)
+
+g <- ggplot(spacing.sd, aes(spacing, value, ymax=upr, ymin=lwr)) + geom_ribbon() +
+  facet_grid(model.name~form.name) + geom_line(col='red')
+ggsave('plots/spacing_estimates.png', g, width=ggwidth, height=ggheight)
+g <- ggplot(cpue.sd.normalized, aes(year, value2, ymax=upr2, ymin=lwr2)) + geom_ribbon() +
+  facet_grid(model.name~form.name) + geom_line(col='red') + ylab('Normalized Abundance')
+g <- g+ geom_hline(yintercept=0)
+ggsave('plots/cpue_estimates.png', g, width=ggwidth, height=ggheight)
+
+x1 <- droplevels(subset(spacing.sd, model=='ST' & form==2,
+                 select=c(spacing, value, sd)))
+x2 <- droplevels(subset(hs.results$uncertainty.df, select=c(spacing, value, sd)))
+xx <- rbind.fill(cbind(model='Spatio-temporal',x1), cbind(model='Experimental', x2))
+xx <- subset(xx, spacing < 43)
+g <- ggplot(xx, aes(spacing, value, ymax=value+2*sd, ymin=value-2*sd,
+                 fill=model, color=model)) + geom_ribbon(alpha=.5)
+ggsave('plots/hs_estimates.png', g, width=ggwidth, height=ggheight)
+
+xxxx
+
+
 ## The effect of resolution on the ST model
 ## knots <- c(50, 100, 150, 200, 300, 400, 500, 600, 700, 800)
 knots <- c(50, 150, 200, 300, 400, 500, 600, 700, 800)
