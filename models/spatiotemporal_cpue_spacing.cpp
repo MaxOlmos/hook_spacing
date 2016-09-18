@@ -108,6 +108,14 @@ Type objective_function<Type>::operator() ()
     // confounded.
     if(form==2) spacing(ft)=(1-pow(exp(-beta_spacing*(ft+1)), lambda));
     if(form==3) spacing(ft)=1; // no effect
+    if(form==4) { // semiparametric form: form 1+ form2
+      if(ft==0)
+	spacing(ft)=(1-pow(exp(-beta_spacing*(ft+1)), lambda)) +
+	  exp(spacing_0); // initialize at first dev
+      else
+	spacing(ft)=(1-pow(exp(-beta_spacing*(ft+1)), lambda)) +
+	  spacing(ft-1)*exp(spacing_devs(ft));
+    }
   }
   // Calculate relative hook power
   vector<Type> hook_power(n_ft);
