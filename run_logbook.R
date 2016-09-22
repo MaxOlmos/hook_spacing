@@ -39,12 +39,12 @@ form9 <- run.logbook(n_knots=knots, model='ST', form=3, vessel=TRUE)
 fits.all <- list(form1, form2, form3, form4, form5, form6, form7, form8, form9)
 saveRDS(fits.all, file='results/fits.all.RDS')
 ## Make quick plots
-g <- plot.parameter.comparison(fits=fits.all[[c(7,8,9)]],
+g <- plot.parameter.comparison(fits=fits.all[c(7,8,9)],
  level.name='model', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
 ggsave('plots/par_comparison_form.png', g, width=10, height=6)
 g <- plot.cpue.comparison(fits.all)
 ggsave('plots/cpue_comparison_form.png', g, width=10, height=6)
-g <- plot.spacing.comparison(fits.all)
+g <- plot.power.comparison(fits.all)
 ggsave('plots/spacing_comparison.png', g, width=5, height=6)
 g <- plot.resids.comparison(fits.all)
 ggsave('plots/resids_comparison.png', g, width=5, height=6)
