@@ -97,12 +97,11 @@ plot.resids.comparison <- function(fits){
 
 
 ## Create mesh from real data
-create.spde <- function(n_knots, make.plot=FALSE, jitter=.3){
-  ## df is used gobally here, so be careful
-  loc_xy <- data.frame(x=df$longitude, y=df$latitude)
+create.spde <- function(data, n_knots, make.plot=FALSE, jitter=.3){
+  loc_xy <- data.frame(x=data$longitude, y=data$latitude)
   knots <- kmeans( x=loc_xy, centers=n_knots )
   loc_centers <- knots$centers
-  loc_xy <- cbind(loc_xy, cluster=knots$cluster, year=as.numeric(df$year))
+  loc_xy <- cbind(loc_xy, cluster=knots$cluster, year=as.numeric(data$year))
   ## ggplot(loc_xy, aes(x,y, col=factor(cluster))) + geom_point(size=.5)
   mesh <- inla.mesh.create( loc_centers, refine=TRUE)
   spde <- inla.spde2.matern( mesh )
@@ -110,16 +109,16 @@ create.spde <- function(n_knots, make.plot=FALSE, jitter=.3){
     png(paste0('plots/mesh_', n_knots, '.png'), width=7, height=4, units='in', res=500)
     par(mar=.5*c(1,1,1,1))
     plot(mesh, main=NA, edge.color=gray(.7))
-    points( jitter(df$longitude, amount=jitter), jitter(df$latitude, amount=jitter), cex=1, pch='.', col=rgb(0,0,0,.3))
+    points( jitter(data$longitude, amount=jitter), jitter(data$latitude, amount=jitter), cex=1, pch='.', col=rgb(0,0,0,.3))
     points( loc_centers, cex=.5, pch=20, col="red")
     dev.off()
   }
   return(list(mesh=mesh, spde=spde, cluster=knots$cluster))
 }
 
-make.inputs <- function(n_knots, model, form,
+make.inputs <- function(data, n_knots, model, form,
   likelihood=1, vessel_effect=FALSE,  n_points_area=1e3, ...){
-  spde <- create.spde(n_knots=n_knots)
+  spde <- create.spde(data=data, n_knots=n_knots)
   loc <- spde$mesh$loc[,1:2]
   n_s <- nrow(loc)
   ## Calculate area of each SPDE grid by generating random points and
@@ -127,8 +126,8 @@ make.inputs <- function(n_knots, model, form,
   ## the points go to Inf.
   loc_extrapolation <-
     expand.grid(
-      "longitude"=seq(min(df$longitude), max(df$longitude),length=n_points_area),
-      "latitude"=seq(min(df$latitude), max(df$latitude),length=n_points_area))
+      "longitude"=seq(min(data$longitude), max(data$longitude),length=n_points_area),
+      "latitude"=seq(min(data$latitude), max(data$latitude),length=n_points_area))
   NN_extrapolation <- nn2( data=loc, query=loc_extrapolation, k=1 )
   area_s <- table(factor(NN_extrapolation$nn.idx,levels=1:n_s)) / nrow(loc_extrapolation)
   ## hist(area_s)
@@ -142,28 +141,28 @@ make.inputs <- function(n_knots, model, form,
   if(model=='S') space <- 1
   if(model=='ST') space <- 2
   Data <- list(likelihood=likelihood, form=form, space=space,
-               catch_i=df$catch,
-               hooks_i=df$hooks,
-               n_t=length(unique(df$year)),
+               catch_i=data$catch,
+               hooks_i=data$hooks,
+               n_t=length(unique(data$year)),
                n_s=n_s,
-               n_ft=max(df$spacing)+5,
-               n_v=length(unique(df$vessel)), # no. vessels
+               n_ft=max(data$spacing)+5,
+               n_v=length(unique(data$vessel)), # no. vessels
                s_i=spde$cluster-1,
-               spacing_i=df$spacing,
-               year_i=as.numeric(df$year)-1,
-               month_i=as.numeric(df$month)-1,
-               hooksize_i=as.numeric(df$hooksize)-1,
-               geartype_i=as.numeric(df$geartype)-1,
-               vessel_i=as.numeric(df$vessel)-1,
-               depth_i=df$depth,
+               spacing_i=data$spacing,
+               year_i=as.numeric(data$year)-1,
+               month_i=as.numeric(data$month)-1,
+               hooksize_i=as.numeric(data$hooksize)-1,
+               geartype_i=as.numeric(data$geartype)-1,
+               vessel_i=as.numeric(data$vessel)-1,
+               depth_i=data$depth,
                area_s=area_s,
                M0=spde$spde$param.inla$M0, M1=spde$spde$param.inla$M1,
                M2=spde$spde$param.inla$M2)
   Params <- list(intercept=.5,
-                 beta_year=rep(0, length(levels(df$year))),
+                 beta_year=rep(0, length(levels(data$year))),
                  beta_geartype= c(0,0, 0),
-                 beta_month=rep(0, length(levels(df$month))),
-                 beta_hooksize=rep(0, length(levels(df$hooksize))),
+                 beta_month=rep(0, length(levels(data$month))),
+                 beta_hooksize=rep(0, length(levels(data$hooksize))),
                  beta_depth=0,beta_depth2=0,
                  beta_spacing=0.5, lambda=1,
                  spacing_0=-3,
@@ -189,12 +188,12 @@ make.inputs <- function(n_knots, model, form,
   ## Need to fix first level of each factor at 0 so they are
   ## identifiable. Get merged into the intercept. I.e., contrasts in R.
    list.factors <- list(
-     beta_year=factor(c(NA, 1:(length(levels(df$year))-1))),
-    beta_geartype=factor(c(NA, 1:(length(levels(df$geartype))-1))),
-    ## beta_month=factor(c(NA, 1:(length(levels(df$month))-1))),
-    ## beta_hooksize=factor(c(NA, 1:(length(levels(df$hooksize))-1))),
-    beta_month=factor(rep(NA, length(levels(df$month)))),
-    beta_hooksize=factor(rep(NA, length(levels(df$hooksize)))))
+     beta_year=factor(c(NA, 1:(length(levels(data$year))-1))),
+    beta_geartype=factor(c(NA, 1:(length(levels(data$geartype))-1))),
+    ## beta_month=factor(c(NA, 1:(length(levels(data$month))-1))),
+    ## beta_hooksize=factor(c(NA, 1:(length(levels(data$hooksize))-1))),
+    beta_month=factor(rep(NA, length(levels(data$month)))),
+    beta_hooksize=factor(rep(NA, length(levels(data$hooksize)))))
 
   ## Turn off parameters for spacing depending on the form
   if(form==1) {
@@ -233,12 +232,12 @@ model.name <- function(model) switch(model, NS="No-Space", S='Space',
 form.name <- function(form)  c('Non-parametric', 'Hamley and Skud', 'None')[form]
 
 
-run.logbook <- function(n_knots, model, form, vessel_effect, likelihood=1, trace=10){
-  n_years <- length(unique(df$year))
+run.logbook <- function(data=data, n_knots, model, form, vessel_effect, likelihood=1, trace=10){
+  n_years <- length(unique(data$year))
   model.name <- model.name(model)
   form.name <- form.name(form)
   start <- Sys.time()
-  Inputs <- make.inputs(n_knots=n_knots, model=model, form=form,
+  Inputs <- make.inputs(data=data, n_knots=n_knots, model=model, form=form,
                         vessel_effect=vessel_effect, likelihood=likelihood)
   Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
                    random=Inputs$Random, map=Inputs$Map)
@@ -309,10 +308,10 @@ simulate.data <- function(loc_xy, loc_centers, params, n_years, SD_obs=.5,
     ## ggplot(x, aes(x,y, col=Omega_s)) + geom_point(size=.5, alpha=.5) + col.scale
     ## with(x, plot(cluster, Omega_s))
     ## y~1+year+geartype+month+hooksize+depth + spatial +spatiotemporal
-    x$mu_i <- params$intercept + params$year[df$year]+
-        params$geartype[df$geartype] +
-        params$month[df$month]+params$hooksize[df$hooksize]+
-        params$depth*df$depth + x$omega_i+
+    x$mu_i <- params$intercept + params$year[data$year]+
+        params$geartype[data$geartype] +
+        params$month[data$month]+params$hooksize[data$hooksize]+
+        params$depth*data$depth + x$omega_i+
         x$epsilon_i
     ## Simulate samples for each site and year
     x$s_i <- x$cluster
