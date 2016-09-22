@@ -3,6 +3,18 @@
 ## logbook results for the stacked poly plot
 df.summarized <- readRDS('results/df.summarized.RDS')
 
+survey <- readRDS('data/survey.RDS')
+fits.areas <- readRDS('results/fits.areas.RDS')
+cpue.areas <- ldply(seq_along(regareas), function(x)
+  cbind(data='logbook', regarea=regareas[x], fits.areas[[x]]$sd.density))
+cpue.areas$se <- cpue.areas$sd
+cpue.areas <- ddply(cpue.areas, .(regarea), mutate,
+      cpue=value/mean(value),
+      lwr=lwr/mean(value),
+      upr=upr/mean(value))
+cpue.areas <- cpue.areas[, names(survey)]
+cpue.df <- rbind.fill(survey, cpue.areas)
+
 fits.all <- readRDS('results/fits_form_vs_model.RDS')
 par.sd.table <- ldply(fits.all, function(x)
   cbind(form=x$form, model=x$model, x$sd.par))

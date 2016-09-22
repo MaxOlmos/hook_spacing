@@ -77,6 +77,8 @@ dev.off()
 
 ## Data filtering
 knots <- 1000
+## data.unfiltered <- readRDS(file='data/data_unfiltered.RDS')
+## data.unfiltered$spacing <- round(data.unfiltered$spacing)
 d1 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=FALSE)
 df.temp <- df
 df <- df.unfiltered

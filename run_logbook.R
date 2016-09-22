@@ -1,18 +1,15 @@
 ### ------------------------------------------------------------
 ## Step 1: read in and prep the data for this model
 source('startup.R')
-## df.unfiltered <- readRDS(file='data/data_unfiltered.RDS')
-## df.unfiltered$spacing <- round(df.unfiltered$spacing)
-df <- readRDS(file='data/data.RDS')
-df$spacing <- round(df$spacing)
-## df.temp <- ddply(df, .(geartype, year), summarize,
+data <- readRDS(file='data/data.RDS')
+## data.temp <- ddply(data, .(geartype, year), summarize,
 ##                        total.catch=sum(catch))
-## df.summarized <- ddply(df.temp, .(year), mutate, pct.catch=total.catch/sum(total.catch))
-## saveRDS(df.summarized, file='results/df.summarized.RDS')
+## data.summarized <- ddply(data.temp, .(year), mutate, pct.catch=total.catch/sum(total.catch))
+## saveRDS(data.summarized, file='results/data.summarized.RDS')
 
-## df.simulated <- df
-## df.simulated$catch <- with(df, hooks*exp(-.1+rnorm(n=nrow(df), mean=0, sd=.1)))
-## df <- df.simulated
+## data.simulated <- data
+## data.simulated$catch <- with(data, hooks*exp(-.1+rnorm(n=nrow(data), mean=0, sd=.1)))
+## data <- data.simulated
 Version <- "models/spatiotemporal_cpue_spacing"
 clean.TMB.files(Version)
 compile( paste0(Version,".cpp"))
@@ -30,16 +27,13 @@ knots <- 1000
 form1 <- run.logbook(n_knots=knots, model='NS', form=1, vessel=TRUE)
 form2 <- run.logbook(n_knots=knots, model='NS', form=2, vessel=TRUE)
 form3 <- run.logbook(n_knots=knots, model='NS', form=3, vessel=TRUE)
-form4 <- run.logbook(n_knots=knots, model='S', form=1, vessel=TRUE)
-form5 <- run.logbook(n_knots=knots, model='S', form=2, vessel=TRUE)
-form6 <- run.logbook(n_knots=knots, model='S', form=3, vessel=TRUE)
-form7 <- run.logbook(n_knots=knots, model='ST', form=1, vessel=TRUE)
-form8 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=TRUE)
-form9 <- run.logbook(n_knots=knots, model='ST', form=3, vessel=TRUE)
-fits.all <- list(form1, form2, form3, form4, form5, form6, form7, form8, form9)
+form4 <- run.logbook(n_knots=knots, model='ST', form=1, vessel=TRUE)
+form5 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=TRUE)
+form6 <- run.logbook(n_knots=knots, model='ST', form=3, vessel=TRUE)
+fits.all <- list(form1, form2, form3, form4, form5, form6)
 saveRDS(fits.all, file='results/fits.all.RDS')
 ## Make quick plots
-g <- plot.parameter.comparison(fits=fits.all[c(7,8,9)],
+g <- plot.parameter.comparison(fits=fits.all[c(4,5,6)],
  level.name='model', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
 ggsave('plots/par_comparison_form.png', g, width=10, height=6)
 g <- plot.cpue.comparison(fits.all)
@@ -50,6 +44,18 @@ g <- plot.resids.comparison(fits.all)
 ggsave('plots/resids_comparison.png', g, width=5, height=6)
 
 
+## Loop through each regarea and get CPUE from full model to compare with
+## survey
+regareas <- c('2A', '2B', '2C', '3A', '3B', '4A', '4B')
+knots <- 50
+fits.areas <- lapply(regareas, function(x){
+  d <- droplevels(subset(data, regcde==x))
+  xx <- run.logbook(data=d, n_knots=knots, model='ST', form=2,
+                    vessel=TRUE)
+  return(xx)
+})
+saveRDS(fits.areas, file='results/fits.areas.RDS')
+
 ## Cleanup
 dyn.unload( dynlib(Version))
 
@@ -58,7 +64,7 @@ dyn.unload( dynlib(Version))
 
 ## ## Test code. Track parameter traces for plotting
 ## Inputs <- make.inputs(n_knots=50, model='S', form=1, likelihood=1)
-## Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
+## Obj <- MakeADATAun(data=Inputs$Data, parameters=Inputs$Params,
 ##                  random=Inputs$Random, map=Inputs$Map)
 ## Obj$env$beSilent()
 ## Opt <<- nlminb(start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
@@ -81,7 +87,7 @@ dyn.unload( dynlib(Version))
 ## for(m in c('NS', "S", "ST")){
 ##   print(paste0('Starting model: ', m))
 ##   Inputs <- make.inputs(n_knots=n_knots, model=m, likelihood=1)
-##   Obj <- MakeADFun( data=Inputs$Data, parameters=Inputs$Params, random=Inputs$Random,
+##   Obj <- MakeADATAun( data=Inputs$Data, parameters=Inputs$Params, random=Inputs$Random,
 ##                    map=Inputs$Map)
 ##   trash <- Obj$env$beSilent()
 ##   start <- Sys.time()
@@ -110,11 +116,11 @@ dyn.unload( dynlib(Version))
 ##   theme(text=element_text(size=12))+
 ##     coord_cartesian(xlim=map.xlim, ylim=map.ylim)
 ## g2 <-
-##   g+geom_point(data=df, aes(x=longitude, y=latitude, colour=statarea),
+##   g+geom_point(data=data, aes(x=longitude, y=latitude, colour=statarea),
 ##                size=map.size, alpha=map.alpha)
 ## ggsave('plots/map_statareas.png', g2, width=map.width, height=map.height)
 ## png('plots/pairs.png', width=ggwidth, height=ggheight, units='in', res=500)
-## pairs(df[, c('logcpue', 'hooksize', 'geartype', 'depth', 'month')])
+## pairs(data[, c('logcpue', 'hooksize', 'geartype', 'depth', 'month')])
 ## dev.off()
 
 

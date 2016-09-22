@@ -5,3 +5,4 @@ data_unfiltered.RDS
 *.o
 hs_data.csv
 results/fits*
+data/survey.RDS

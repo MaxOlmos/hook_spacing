@@ -1,5 +1,7 @@
 ## This file loads the data, makes plots, tables and figures.
-
+g <- ggplot(cpue.df, aes(year, cpue, ymin=lwr, ymax=upr, group=data, fill=data)) +
+  geom_ribbon(alpha=.5)+facet_wrap('regarea', scales='free_y')
+ggsave('plots/cpue_trends_vs_survey.png', g, width=ggwidth, height=ggheight)
 
 g <- ggplot(df.summarized, aes(year, pct.catch, group=geartype, fill=geartype)) +
   geom_area() + ylab("Proportion Catch") + coord_flip()
