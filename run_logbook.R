@@ -1,7 +1,9 @@
 ### ------------------------------------------------------------
 ## Step 1: read in and prep the data for this model
 source('startup.R')
-data <- readRDS(file='data/data.RDS')
+## Load data for all regulatory areas, to be subsetted later
+data.full <- readRDS(file='data/data.RDS')
+
 ## data.temp <- ddply(data, .(geartype, year), summarize,
 ##                        total.catch=sum(catch))
 ## data.summarized <- ddply(data.temp, .(year), mutate, pct.catch=total.catch/sum(total.catch))
@@ -20,11 +22,10 @@ dyn.load( dynlib(Version))
 ## and full spatio-temporal (ST). orm=1 implies a random walk on hook
 ## spacing, form=2 is the parametric HS model.
 
-
 ### Explore effects of key dimensions.
 ## Spacing vs model
 knots <- 1000
-d <- droplevels(subset(data, regcde=='2C'))
+d <- droplevels(subset(data.full, regcde=='3A'))
 fit1 <- run.logbook(d, n_knots=knots, model='NS', form=1, vessel=TRUE)
 fit2 <- run.logbook(d, n_knots=knots, model='NS', form=2, vessel=TRUE)
 fit3 <- run.logbook(d, n_knots=knots, model='NS', form=3, vessel=TRUE)
@@ -40,21 +41,31 @@ saveRDS(fits.all, file='results/fits.all.RDS')
 regareas <- c('2A', '2B', '2C', '3A', '3B', '4A', '4B')
 knots <- 50
 fits.areas <- lapply(regareas, function(x){
-  d <- droplevels(subset(data, regcde==x))
+  d <- droplevels(subset(data.full, regcde==x))
   xx <- run.logbook(data=d, n_knots=knots, model='ST', form=2,
                     vessel=TRUE)
   return(xx)
 })
 saveRDS(fits.areas, file='results/fits.areas.RDS')
 
-## Fit to some simulated data.
-d <- simulate.data(data, 100, fit=fit5)
-with(d, plot(density_t))
-fit.temp <- run.logbook(d, n_knots=knots, model='ST', form=3, vessel=TRUE)
+### Fit to some simulated data. Base if off the full model results from 3A.
+fit <- readRDS('results/fits.areas.RDS')[[4]]
+## First simulate with original spacing levels
+d <- droplevels(subset(data.full, regcde=='3A'))
+sim.orig <- simulate.data(d, 200, fit=fit, beta=NULL)
+fit.orig <- run.logbook(dat=d, n_knots=200, model='NS', form=2, vessel=FALSE)
+## Now resimulate with a totally flat hook spacing
+sim.flat <- simulate.data(d, 200, fit=fit, beta=0)
+fit.flat <- run.logbook(sim.flat$data, n_knots=200, model='NS', form=2, vessel=FALSE)
+## And again with a decreasing trend in spacing over time
+sim.trend <- simulate.data(d, 200, fit=fit, beta=.5)
+fit.trend <- run.logbook(sim.trend$data, n_knots=200, model='NS', form=2, vessel=FALSE)
+fits.sim <- list(fit.orig=fit.orig, fit.flat=fit.flat, fit.trend=fit.trend)
+saveRDS(fits.sim, file='results/fits.sim.RDS')
+
 
 ## Cleanup
 dyn.unload( dynlib(Version))
-
 
 
 ### ------------------------------------------------------------
