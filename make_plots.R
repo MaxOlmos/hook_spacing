@@ -1,4 +1,19 @@
 ## This file loads the data, makes plots, tables and figures.
+
+
+## Make quick plots
+fits.all <- readRDS('results/fits.all.RDS')
+g <- plot.parameter.comparison(fits=fits.all[c(4,5,6)],
+ level.name='model', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
+ggsave('plots/par_comparison_form.png', g, width=10, height=6)
+g <- plot.cpue.comparison(fits.all)
+ggsave('plots/cpue_comparison_form.png', g, width=10, height=6)
+g <- plot.power.comparison(fits.all)
+ggsave('plots/spacing_comparison.png', g, width=5, height=6)
+g <- plot.resids.comparison(fits.all)
+ggsave('plots/resids_comparison.png', g, width=5, height=6)
+
+
 g <- ggplot(cpue.df, aes(year, cpue, ymin=lwr, ymax=upr, group=data, fill=data)) +
   geom_ribbon(alpha=.5)+facet_wrap('regarea', scales='free_y')
 ggsave('plots/cpue_trends_vs_survey.png', g, width=ggwidth, height=ggheight)

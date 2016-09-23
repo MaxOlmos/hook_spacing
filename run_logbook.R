@@ -24,24 +24,15 @@ dyn.load( dynlib(Version))
 ### Explore effects of key dimensions.
 ## Spacing vs model
 knots <- 1000
-form1 <- run.logbook(n_knots=knots, model='NS', form=1, vessel=TRUE)
-form2 <- run.logbook(n_knots=knots, model='NS', form=2, vessel=TRUE)
-form3 <- run.logbook(n_knots=knots, model='NS', form=3, vessel=TRUE)
-form4 <- run.logbook(n_knots=knots, model='ST', form=1, vessel=TRUE)
-form5 <- run.logbook(n_knots=knots, model='ST', form=2, vessel=TRUE)
-form6 <- run.logbook(n_knots=knots, model='ST', form=3, vessel=TRUE)
-fits.all <- list(form1, form2, form3, form4, form5, form6)
+d <- droplevels(subset(data, regcde=='2C'))
+fit1 <- run.logbook(d, n_knots=knots, model='NS', form=1, vessel=TRUE)
+fit2 <- run.logbook(d, n_knots=knots, model='NS', form=2, vessel=TRUE)
+fit3 <- run.logbook(d, n_knots=knots, model='NS', form=3, vessel=TRUE)
+fit4 <- run.logbook(d, n_knots=knots, model='ST', form=1, vessel=TRUE)
+fit5 <- run.logbook(d, n_knots=knots, model='ST', form=2, vessel=F)
+fit6 <- run.logbook(d, n_knots=knots, model='ST', form=3, vessel=TRUE)
+fits.all <- list(fit1, fit2, fit3, fit4, fit5, fit6)
 saveRDS(fits.all, file='results/fits.all.RDS')
-## Make quick plots
-g <- plot.parameter.comparison(fits=fits.all[c(4,5,6)],
- level.name='model', levels=c('Nonparametric', 'Hamley & Skud', 'None'))
-ggsave('plots/par_comparison_form.png', g, width=10, height=6)
-g <- plot.cpue.comparison(fits.all)
-ggsave('plots/cpue_comparison_form.png', g, width=10, height=6)
-g <- plot.power.comparison(fits.all)
-ggsave('plots/spacing_comparison.png', g, width=5, height=6)
-g <- plot.resids.comparison(fits.all)
-ggsave('plots/resids_comparison.png', g, width=5, height=6)
 
 
 ## Loop through each regarea and get CPUE from full model to compare with
@@ -56,8 +47,15 @@ fits.areas <- lapply(regareas, function(x){
 })
 saveRDS(fits.areas, file='results/fits.areas.RDS')
 
+## Fit to some simulated data.
+d <- simulate.data(data, 100, fit=fit5)
+with(d, plot(density_t))
+fit.temp <- run.logbook(d, n_knots=knots, model='ST', form=3, vessel=TRUE)
+
 ## Cleanup
 dyn.unload( dynlib(Version))
+
+
 
 ### ------------------------------------------------------------
 ### OLD CODE

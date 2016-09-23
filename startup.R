@@ -28,6 +28,10 @@ effective.skates <- function(hooks.per.skate, hook.spacing, skates=1){
     (skates*hooks.per.skate)*1.52*(1-exp(-.06*hook.spacing))/100
 }
 effective.skates(100, 18)               # doesn't quite match up due to rounding
+hook_power <- function(spacing, alpha, beta, lambda){
+    (1- exp(-beta*spacing)^lambda ) / (1- exp(-beta*18)^lambda )
+}
+
 ## This function will clean up the compiled files from a TMB object. Useful
 ## for development when need to ensure all change are propogated.
 clean.TMB.files <- function(model.path){
@@ -113,7 +117,7 @@ create.spde <- function(data, n_knots, make.plot=FALSE, jitter=.3){
     points( loc_centers, cex=.5, pch=20, col="red")
     dev.off()
   }
-  return(list(mesh=mesh, spde=spde, cluster=knots$cluster))
+  return(list(mesh=mesh, spde=spde, cluster=knots$cluster, loc_centers=loc_centers))
 }
 
 make.inputs <- function(data, n_knots, model, form,
@@ -133,7 +137,6 @@ make.inputs <- function(data, n_knots, model, form,
   ## hist(area_s)
   ## test <- cbind(loc_extrapolation, idx=NN_extrapolation$nn.idx)
   ## ggplot(test, aes(longitude,latitude, color=idx)) + geom_point()
-
 
   ## Make inputs for all three models
   model <- match.arg(model, choices=c('NS', "S", "ST"))
@@ -286,37 +289,67 @@ run.logbook <- function(data=data, n_knots, model, form, vessel_effect, likeliho
   return(x)
 }
 
-## !!!THIS IS NOT USED AND OUTDATED AS OF 8/24/2016!!!!
-simulate.data <- function(loc_xy, loc_centers, params, n_years, SD_obs=.5,
-                          Scale=1, SD_omega=1.5, SD_epsilon=.2 ){
-    ## I'm passing locations into this instead of randomly generating them
-    ## like Jim did.
-    RF_omega <- RMgauss(var=SD_omega^2, scale=Scale)
-    RF_epsilon <- RMgauss(var=SD_epsilon^2, scale=Scale)
-    Omega_s <- RFsimulate(model=RF_omega, x=loc_centers[,1], y=loc_centers[,2])@data[,1]
-    ## Generate spatio-temporal effects. Each year has a different number
-    ## of observations so need to generate them separately and then
-    ## carefully merge them in to add their effect
-    Epsilon_st <- matrix(NA, nrow=nrow(loc_centers), ncol=n_years)
-    for(t in 1:n_years){
-      Epsilon_st[,t] <- RFsimulate(model=RF_epsilon,
-                                   x=loc_centers[,1], y=loc_centers[,2])@data[,1]
-    }
-    x <- loc_xy
-    x$epsilon_i <- Epsilon_st[cbind(x$cluster, x$year)]
-    x$omega_i <- Omega_s[loc_xy$cluster]
-    ## ggplot(x, aes(x,y, col=Omega_s)) + geom_point(size=.5, alpha=.5) + col.scale
-    ## with(x, plot(cluster, Omega_s))
-    ## y~1+year+geartype+month+hooksize+depth + spatial +spatiotemporal
-    x$mu_i <- params$intercept + params$year[data$year]+
-        params$geartype[data$geartype] +
-        params$month[data$month]+params$hooksize[data$hooksize]+
-        params$depth*data$depth + x$omega_i+
-        x$epsilon_i
-    ## Simulate samples for each site and year
-    x$s_i <- x$cluster
-    x$catch.simulated <- rnorm(n=length(x$mu_i), mean=x$mu_i, sd=SD_obs)
-    return( x )
+simulate.data <- function(data, n_knots, fit){
+  ## Create simulated spatial process, using output from fit
+  n_knots <- 100
+  n_points_area <- 1e3
+  n_years <- length(unique(data$year))
+  spde <- create.spde(data=data, n_knots=n_knots)
+  loc <- spde$mesh$loc[,1:2]
+  loc_centers <- spde$loc_centers
+  n_s <- nrow(loc)
+  ## Calculate area of each SPDE grid by generating random points and
+  ## seeing which proportion fall into each grid. This converges to area as
+  ## the points go to Inf.
+  loc_extrapolation <-
+    expand.grid(
+      "longitude"=seq(min(data$longitude), max(data$longitude),length=n_points_area),
+      "latitude"=seq(min(data$latitude), max(data$latitude),length=n_points_area))
+  NN_extrapolation <- nn2( data=loc, query=loc_extrapolation, k=1 )
+  area_s <- table(factor(NN_extrapolation$nn.idx,levels=1:n_s)) / nrow(loc_extrapolation)
+  SD_omega <- fit$sd.par$value[fit$sd.par$par=='SigmaO']
+  SD_epsilon <- fit$sd.par$value[fit$sd.par$par=='SigmaE']
+  Sigma <- fit$sd.par$value[fit$sd.par$par=='Sigma']
+  Scale <- .2#fit$sd.par$value[fit$sd.par$par=='Range']
+  intercept <- fit$sd.par$value[fit$sd.par$par=='intercept']
+  beta_years <- fit$sd.par$value[grep('beta_year', fit$sd.par$par2)]
+  beta_geartype <- fit$sd.par$value[grep('beta_geartype', fit$sd.par$par2)]
+
+  ## Spatial effects
+  RF_omega <- RMgauss(var=SD_omega^2, scale=Scale)
+  Omega_s <- RFsimulate(model=RF_omega, x=loc_centers[,1], y=loc_centers[,2])@data[,1]
+
+  ## Spatio-temporal effects. Each year has a different number
+  ## of observations so need to generate them separately and then
+  ## carefully merge them in to add their effect
+  RF_epsilon <- RMgauss(var=SD_epsilon^2, scale=Scale)
+  log_D_st <- Epsilon_st <- matrix(NA, nrow=nrow(loc_centers), ncol=n_years)
+  for(t in 1:n_years){
+    Epsilon_st[,t] <-
+      RFsimulate(model=RF_epsilon, x=loc_centers[,1], y=loc_centers[,2])@data[,1]
+    log_D_st[,t] <- intercept + Epsilon_st[,t] + Omega_s + beta_years[t]
+  }
+  density_t = colSums( exp(log_D_st) )
+
+  ## Now match up expected density with each set
+  data$cpue.true <- density_t[data$year]
+  ## data$epsilon_i <- Epsilon_st[cbind(spde$cluster, as.numeric(data$year))]
+  data$cluster <- spde$cluster
+
+  ggplot(data, aes(longitude,latitude, col=cluster)) +
+    geom_point(size=.5, alpha=.5) + scale_color_gradient(low='blue', high='red')
+  ## Now sample from the truth
+  ## y~1+year+geartype+month+hooksize+depth + spatial +spatiotemporal
+
+  ## Expected catch is density*q*hooks*f(spacing)
+  data$mu_i <-
+    exp(beta_geartype[data$geartype])*  # q
+    data$hooks *                        # hooks
+    hook_power(data$spacing, alpha=1, beta=.1, lambda=1) # hook power
+
+  ## Simulate samples for each site and year
+  data$catch <- exp(rnorm(n=length(data$mu_i), mean=log(data$mu_i), sd=Sigma))
+  return( list(data=data, density_t=density_t) )
 }
 
 plot.spacing.fit <- function(results, multiple.fits=FALSE){
