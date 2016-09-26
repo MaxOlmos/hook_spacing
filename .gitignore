@@ -6,3 +6,5 @@ data_unfiltered.RDS
 hs_data.csv
 results/fits*
 data/survey.RDS
+results/data.sim.RDS
+results/densities.sim.RDS

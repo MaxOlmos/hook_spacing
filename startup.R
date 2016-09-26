@@ -341,18 +341,14 @@ simulate.data <- function(dat, n_knots, fit, beta=NULL){
     log_D_st[,t] <- intercept + Epsilon_st[,t] + Omega_s + beta_years[t]
   }
   density_t = colSums( exp(log_D_st) )
-
   ## Now match up expected density with each set
-  dat$cpue.true <- density_t[dat$year]
-  ## dat$epsilon_i <- Epsilon_st[cbind(spde$cluster, as.numeric(dat$year))]
-  dat$cluster <- spde$cluster
+  dat$density <- exp(log_D_st[cbind(spde$cluster, as.numeric(dat$year))])
 
-  ggplot(dat, aes(longitude,latitude, col=cluster)) +
-    geom_point(size=.5, alpha=.5) + scale_color_gradient(low='blue', high='red')
+  ## ggplot(dat, aes(longitude,latitude, col=cluster)) +
+  ##   geom_point(size=.5, alpha=.5) + scale_color_gradient(low='blue', high='red')
   ## Now sample from the truth
   ## y~1+year+geartype+month+hooksize+depth + spatial +spatiotemporal
 
-  ## Expected catch is density*q*hooks*f(spacing)
   ## In some cases want to alter the spacing to create trends in hook
   ## spacing. Assuming for now a simple linear decrease over time. If
   ## beta=1 this declines, if beta=0 it is constant. If NULL the original
@@ -364,11 +360,12 @@ simulate.data <- function(dat, n_knots, fit, beta=NULL){
     ##    dat$spacing <- pmax(3, rpois(n=nrow(dat), lambda=15-beta*years))
     ##    ggplot(dat, aes(years, spacing)) + geom_jitter(alpha=.05) + geom_smooth()
   }
-
+  ## Expected catch is density*q*hooks*f(spacing)
   dat$mu_i <-
+    dat$density*                       # denisty
     exp(beta_geartype[dat$geartype])*  # q
     dat$hooks *                        # hooks
-    hook_power(dat$spacing, alpha=1, beta=beta_spacing, lambda=1) # hook power
+    hook_power(dat$spacing, alpha=1, beta=beta_spacing, lambda=lambda) # hook power
 
   ## Simulate samples for each site and year
   dat$catch <- exp(rnorm(n=length(dat$mu_i), mean=log(dat$mu_i), sd=Sigma))

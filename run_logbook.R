@@ -35,7 +35,6 @@ fit6 <- run.logbook(d, n_knots=knots, model='ST', form=3, vessel=TRUE)
 fits.all <- list(fit1, fit2, fit3, fit4, fit5, fit6)
 saveRDS(fits.all, file='results/fits.all.RDS')
 
-
 ## Loop through each regarea and get CPUE from full model to compare with
 ## survey
 regareas <- c('2A', '2B', '2C', '3A', '3B', '4A', '4B')
@@ -51,17 +50,21 @@ saveRDS(fits.areas, file='results/fits.areas.RDS')
 ### Fit to some simulated data. Base if off the full model results from 3A.
 fit <- readRDS('results/fits.areas.RDS')[[4]]
 ## First simulate with original spacing levels
+knots <- 1000
 d <- droplevels(subset(data.full, regcde=='3A'))
-sim.orig <- simulate.data(d, 200, fit=fit, beta=NULL)
-fit.orig <- run.logbook(dat=d, n_knots=200, model='NS', form=2, vessel=FALSE)
+sim.orig <- simulate.data(d, knots, fit=fit, beta=NULL)
+fit.orig <- run.logbook(dat=sim.orig$data, n_knots=knots, model='ST', form=3, vessel=FALSE)
 ## Now resimulate with a totally flat hook spacing
-sim.flat <- simulate.data(d, 200, fit=fit, beta=0)
-fit.flat <- run.logbook(sim.flat$data, n_knots=200, model='NS', form=2, vessel=FALSE)
+sim.flat <- simulate.data(d, knots, fit=fit, beta=0)
+fit.flat <- run.logbook(sim.flat$data, n_knots=knots, model='ST', form=3, vessel=FALSE)
 ## And again with a decreasing trend in spacing over time
-sim.trend <- simulate.data(d, 200, fit=fit, beta=.5)
-fit.trend <- run.logbook(sim.trend$data, n_knots=200, model='NS', form=2, vessel=FALSE)
+sim.trend <- simulate.data(d, knots, fit=fit, beta=.5)
+fit.trend <- run.logbook(sim.trend$data, n_knots=knots, model='ST', form=3, vessel=FALSE)
+data.sim <- list(sim.orig, sim.flat, sim.trend)
 fits.sim <- list(fit.orig=fit.orig, fit.flat=fit.flat, fit.trend=fit.trend)
+saveRDS(data.sim, file='results/data.sim.RDS')
 saveRDS(fits.sim, file='results/fits.sim.RDS')
+
 
 
 ## Cleanup

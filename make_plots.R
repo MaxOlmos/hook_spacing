@@ -1,5 +1,27 @@
 ## This file loads the data, makes plots, tables and figures.
 
+## Simulated trajectories with ignored hook spacing effect
+fits.sim <- readRDS('results/fits.sim.RDS')
+data.sim <- readRDS('results/data.sim.RDS')
+densities.true <- ldply(1:3, function(i){
+  x <- data.sim[[i]]
+  data.frame(trend=c('original', 'flat', 'trend')[i], year=1996:2015, density=x$density_t)
+  })
+densities.sim <- ldply(fits.sim, function(x) x$sd.density)
+x <- as.factor(densities.sim$.id)
+levels(x) <- c('flat', 'original', 'trend')
+densities.sim$trend <- x
+densities.sim$density <- densities.sim$value
+densities.sim$model <- "Predicted"
+densities.true$model <- "Truth"
+densities.both <- rbind(densities.true, densities.sim[, names(densities.true)])
+densities.both <- ddply(densities.both, .(trend, model), mutate,
+                        relative.density=density/mean(density),
+                        test=mean(density))
+g <- ggplot(densities.both, aes(year, relative.density, color=model,
+                           group=model)) +
+  geom_line() + facet_wrap('trend')
+ggsave('plots/sim_trends.png', g, width=9, height=4)
 
 ## Make quick plots
 fits.all <- readRDS('results/fits.all.RDS')
