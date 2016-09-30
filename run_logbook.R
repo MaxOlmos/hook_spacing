@@ -76,13 +76,14 @@ simulate.fit <- function(i, d, fit, knots, model){
     data.frame(rep=i, trend='Trend', year=1996:2015,
                rel.abundance.true=sim.trend$density_t/mean(sim.trend$density_t),
                rel.abundance.fit=fit.trend$sd.density$value/mean(fit.trend$sd.density$value)))
+  if(i==1) saveRDS(list(sim.flat=sim.flat, sim.trend=sim.trend), file='results/data.sim.RDS')
   res <- within(res, {
     abs.error <- -rel.abundance.true+rel.abundance.fit
     rel.error <- (-rel.abundance.true+rel.abundance.fit)/rel.abundance.true})
   return(res)
 }
 
-fits.sim <- ldply(1:20, function(i) simulate.fit(i=i, d=d, fit=fit, knots=1000, model='ST'))
+fits.sim <- ldply(1:1, function(i) simulate.fit(i=i, d=d, fit=fit, knots=200, model='ST'))
 saveRDS(fits.sim, file='results/fits.sim.RDS')
 ggplot(fits.sim, aes(year, abs.error, group=rep)) + geom_line() + facet_wrap('trend')
 
