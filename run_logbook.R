@@ -49,21 +49,42 @@ saveRDS(fits.areas, file='results/fits.areas.RDS')
 
 ### Fit to some simulated data. Base if off the full model results from 3A.
 fit <- readRDS('results/fits.areas.RDS')[[4]]
-## First simulate with original spacing levels
-knots <- 1000
 d <- droplevels(subset(data.full, regcde=='3A'))
-sim.orig <- simulate.data(d, knots, fit=fit, beta=NULL)
-fit.orig <- run.logbook(dat=sim.orig$data, n_knots=knots, model='ST', form=3, vessel=FALSE)
-## Now resimulate with a totally flat hook spacing
-sim.flat <- simulate.data(d, knots, fit=fit, beta=0)
-fit.flat <- run.logbook(sim.flat$data, n_knots=knots, model='ST', form=3, vessel=FALSE)
-## And again with a decreasing trend in spacing over time
-sim.trend <- simulate.data(d, knots, fit=fit, beta=.5)
-fit.trend <- run.logbook(sim.trend$data, n_knots=knots, model='ST', form=3, vessel=FALSE)
-data.sim <- list(sim.orig, sim.flat, sim.trend)
-fits.sim <- list(fit.orig=fit.orig, fit.flat=fit.flat, fit.trend=fit.trend)
-saveRDS(data.sim, file='results/data.sim.RDS')
+model <- 'NS'
+knots <- 1000
+
+simulate.fit <- function(i, d, fit, knots, model){
+  ## ## First simulate with original spacing levels
+  ## sim.orig <- simulate.data(d, knots, fit=fit, beta=NULL)
+  ## fit.orig <- run.logbook(dat=sim.orig$data, n_knots=knots, model=model, form=3, vessel=FALSE)
+  ## Now resimulate with a totally flat hook spacing
+  sim.flat <- simulate.data(d, knots, fit=fit, beta=0)
+  fit.flat <- run.logbook(sim.flat$data, n_knots=knots, model=model, form=3, vessel=FALSE)
+  temp.flat <- data.frame(rep=i, trend='Flat', year=1996:2015, density=sim.flat$density_t)
+  ## And again with a decreasing trend in spacing over time
+  sim.trend <- simulate.data(d, knots, fit=fit, beta=.5)
+  fit.trend <- run.logbook(sim.trend$data, n_knots=knots, model=model, form=3, vessel=FALSE)
+  temp.trend <- data.frame(rep=i, trend='Trend', year=1996:2015, density=sim.trend$density_t)
+  ## Return only what needed
+  res <- rbind(
+    ## data.frame(rep=i, trend='Original', year=1996:2015,
+    ##            rel.abundance.true=sim.orig$density_t/mean(sim.orig$density_t),
+    ##            rel.abundance.fit=fit.orig$sd.density$value/mean(fit.orig$sd.density$value)),
+    data.frame(rep=i, trend='Flat', year=1996:2015,
+               rel.abundance.true=sim.flat$density_t/mean(sim.flat$density_t),
+               rel.abundance.fit=fit.flat$sd.density$value/mean(fit.flat$sd.density$value)),
+    data.frame(rep=i, trend='Trend', year=1996:2015,
+               rel.abundance.true=sim.trend$density_t/mean(sim.trend$density_t),
+               rel.abundance.fit=fit.trend$sd.density$value/mean(fit.trend$sd.density$value)))
+  res <- within(res, {
+    abs.error <- -rel.abundance.true+rel.abundance.fit
+    rel.error <- (-rel.abundance.true+rel.abundance.fit)/rel.abundance.true})
+  return(res)
+}
+
+fits.sim <- ldply(1:20, function(i) simulate.fit(i=i, d=d, fit=fit, knots=1000, model='ST'))
 saveRDS(fits.sim, file='results/fits.sim.RDS')
+ggplot(fits.sim, aes(year, abs.error, group=rep)) + geom_line() + facet_wrap('trend')
 
 
 
