@@ -355,10 +355,10 @@ simulate.data <- function(dat, n_knots, fit, beta=NULL){
   ## spacing is used.
   if(!is.null(beta)){
     years <- as.numeric(dat$year)
-    dat$spacing <- pmax(3, rnbinom(n=nrow(dat), size=25,
-                                    mu=15-beta*years))
+    dat$spacing <- pmax(3, rnbinom(n=nrow(dat), size=35,
+                                    mu=20-beta*years))
     ##    dat$spacing <- pmax(3, rpois(n=nrow(dat), lambda=15-beta*years))
-    ##    ggplot(dat, aes(years, spacing)) + geom_jitter(alpha=.05) + geom_smooth()
+     ggplot(dat, aes(years, spacing)) + geom_jitter(alpha=.05) + geom_smooth()
   }
   ## Expected catch is density*q*hooks*f(spacing)
   dat$mu_i <-
