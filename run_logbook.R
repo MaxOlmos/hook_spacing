@@ -50,9 +50,8 @@ saveRDS(fits.areas, file='results/fits.areas.RDS')
 ### Fit to some simulated data. Base if off the full model results from 3A.
 fit <- readRDS('results/fits.areas.RDS')[[4]]
 d <- droplevels(subset(data.full, regcde=='3A'))
-knots <- 1000
-fits.sim <- ldply(1:3, function(i)
-  simulate.fit(i=i, d=d, fit=fit, knots=200, model='NS'))
+fits.sim <- ldply(1:20, function(i)
+  simulate.fit(i=i, d=d, fit=fit, knots=1000, model='ST'))
 saveRDS(fits.sim, file='results/fits.sim.RDS')
 ggplot(fits.sim, aes(year, rel.error, group=rep)) + geom_line() + facet_wrap('trend')
 
