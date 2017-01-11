@@ -1,4 +1,3 @@
-
 #include <TMB.hpp>
 // lognormal density
 template<class Type>
@@ -86,13 +85,17 @@ Type objective_function<Type>::operator() ()
   Type nll_spacing=0;		// RW on hook spacing
   Type nll_vessel=0;		// vessel effect
 
-  // Derived quantities
+  //// Derived quantities
+  // Geospatial
   Type Range = sqrt(8) / exp( ln_kappa );
   Type SigmaO = 1 / sqrt(4 * M_PI * exp(2*ln_tau_O) * exp(2*ln_kappa));
   Type SigmaE = 1 / sqrt(4 * M_PI * exp(2*ln_tau_E) * exp(2*ln_kappa));
-  Type Sigma = exp(ln_obs);
   Eigen::SparseMatrix<Type>
     Q = exp(4*ln_kappa)*M0 + Type(2.0)*exp(2*ln_kappa)*M1 + M2;
+  // Variance components
+  Type Sigma = exp(ln_obs);	// observation
+  Type sigma_vessel=exp(ln_vessel); // vessel effect
+  Type sigma_spacing=exp(ln_spacing); // smoother on spacing
 
   // Calculate the spacing effects by foot (random effects)
   vector<Type> spacing(n_ft);
@@ -143,15 +146,17 @@ Type objective_function<Type>::operator() ()
   // Space and spatio-temporal
   if(space>0) nll_omega += SCALE(GMRF(Q), 1/exp(ln_tau_O))(omega_s);
   if(space>1) {
-  for( int t=0; t<n_t; t++)
-    nll_epsilon += SCALE(GMRF(Q), 1/exp(ln_tau_E))(epsilon_st.col(t));
+    for( int t=0; t<n_t; t++)
+      nll_epsilon += SCALE(GMRF(Q), 1/exp(ln_tau_E))(epsilon_st.col(t));
   }
-  // hook spacing effects
-  for(int ft=0; ft<n_ft; ft++)
-    nll_spacing -= dnorm(Type(0.0), spacing_devs(ft),exp(ln_spacing), true);
+  if(form==1){
+    // hook spacing devs for smoother
+    for(int ft=0; ft<n_ft; ft++)
+      nll_spacing -= dnorm(Type(0.0), spacing_devs(ft), sigma_spacing, true);
+  }
   // vessel effects
   for(int v=0; v<n_v; v++)
-    nll_vessel -= dnorm(Type(0.0), vessel_v(v),exp(ln_vessel), true);
+    nll_vessel -= dnorm(Type(0.0), vessel_v(v), sigma_vessel, true);
 
   //// Probability of the data, given random effects (likelihood)
   for( int i=0; i<n_i; i++){
@@ -160,12 +165,11 @@ Type objective_function<Type>::operator() ()
 	dlognorm(catch_i(i), log(mu_i(i)), Sigma, true);
     if(likelihood==2) // gamma case
       nll_likelihood -=
-    dgamma(catch_i(i), 1/pow(Sigma,2), mu_i(i)*pow(Sigma,2), true);
+	dgamma(catch_i(i), 1/pow(Sigma,2), mu_i(i)*pow(Sigma,2), true);
     if(likelihood==3) // inverse gaussian
       nll_likelihood-=
 	dinvgauss(catch_i(i), mu_i(i), Sigma, true );
   }
-
 
   // Calculate joint negative log likelihood
   Type jnll = nll_likelihood+nll_omega+nll_epsilon+nll_spacing +nll_vessel;
@@ -221,8 +225,8 @@ Type objective_function<Type>::operator() ()
   ADREPORT(spacing_0);
   ADREPORT(Sigma);	   	// observation
   // random effect variances
-  Type Sigma_vessel=exp(ln_vessel);
-  ADREPORT(Sigma_vessel);
+  ADREPORT(sigma_vessel);
+  ADREPORT(sigma_spacing);
   // Derived geospatial components
   ADREPORT(Range);		// geostatistical range
   ADREPORT(SigmaE);		// space
