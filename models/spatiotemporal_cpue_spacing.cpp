@@ -120,12 +120,12 @@ Type objective_function<Type>::operator() ()
   }
 
   // The model predicted catch for each observation, in natural space:
-  // catch=density*hook_power*hooks*catchability
+  // catch=density*effective hooks*catchability
   vector<Type> mu_i(n_i);
   for( int i=0; i<n_i; i++){
     mu_i(i) =
       // effective hooks
-      hooks_i(i)*spacing(spacing_i(i)-1)*
+      hooks_i(i)*hook_power(spacing_i(i)-1)*
       // density
       exp(intercept + beta_year(year_i(i)) +
 	  beta_depth*depth_i(i) + beta_depth2*depth_i(i)*depth_i(i) +
