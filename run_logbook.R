@@ -24,14 +24,15 @@ dyn.load( dynlib(Version))
 
 ### Explore effects of key dimensions.
 ## Spacing vs model
-knots <- 1000
+knots <- 100
 d <- droplevels(subset(data.full, regcde=='3A'))
-fit1 <- run.logbook(d, n_knots=knots, model='NS', form=1, vessel=TRUE)
-fit2 <- run.logbook(d, n_knots=knots, model='NS', form=2, vessel=TRUE)
-fit3 <- run.logbook(d, n_knots=knots, model='NS', form=3, vessel=TRUE)
-fit4 <- run.logbook(d, n_knots=knots, model='ST', form=1, vessel=TRUE)
-fit5 <- run.logbook(d, n_knots=knots, model='ST', form=2, vessel=F)
-fit6 <- run.logbook(d, n_knots=knots, model='ST', form=3, vessel=TRUE)
+vessel <- FALSE
+fit1 <- run.logbook(d, n_knots=knots, model='NS', form=1, vessel=vessel)
+fit2 <- run.logbook(d, n_knots=knots, model='NS', form=2, vessel=vessel)
+fit3 <- run.logbook(d, n_knots=knots, model='NS', form=3, vessel=vessel)
+fit4 <- run.logbook(d, n_knots=knots, model='ST', form=1, vessel=vessel)
+fit5 <- run.logbook(d, n_knots=knots, model='ST', form=2, vessel=vessel)
+fit6 <- run.logbook(d, n_knots=knots, model='ST', form=3, vessel=vessel)
 fits.all <- list(fit1, fit2, fit3, fit4, fit5, fit6)
 saveRDS(fits.all, file='results/fits.all.RDS')
 
