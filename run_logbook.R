@@ -22,11 +22,11 @@ dyn.load( dynlib(Version))
 ## and full spatio-temporal (ST). orm=1 implies a random walk on hook
 ## spacing, form=2 is the parametric HS model.
 
-### Explore effects of key dimensions.
+### Explore effcets of key dimensions.
 ## Spacing vs model
-knots <- 100
+knots <- 1000
 d <- droplevels(subset(data.full, regcde=='3A'))
-vessel <- FALSE
+vessel <- TRUE
 fit1 <- run.logbook(d, n_knots=knots, model='NS', form=1, vessel=vessel)
 fit2 <- run.logbook(d, n_knots=knots, model='NS', form=2, vessel=vessel)
 fit3 <- run.logbook(d, n_knots=knots, model='NS', form=3, vessel=vessel)
