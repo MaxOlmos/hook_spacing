@@ -167,7 +167,6 @@ make.inputs <- function(dat, n_knots, model, form,
                  beta_hooksize=rep(0, length(levels(dat$hooksize))),
                  beta_depth=0,beta_depth2=0,
                  beta_spacing=0.5, lambda=1,
-                 spacing_0=-3,
                  ln_tau_O=-.6, ln_tau_E=.25,
                  ln_kappa=.3,  ln_obs=-.2, ln_spacing=0,
                  ln_vessel=.1,
@@ -205,13 +204,13 @@ make.inputs <- function(dat, n_knots, model, form,
   if(form==2) {
     ## H&S form on spacing
     xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
-               ln_spacing=factor(NA), spacing_0=factor(NA))
+               ln_spacing=factor(NA))
   }
   if(form==3) {
     ## No effect (set to zero in the TMB model)
     xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
                ln_spacing=factor(NA), beta_spacing=factor(NA),
-                lambda=factor(NA), spacing_0=factor(NA))
+                lambda=factor(NA))
   }
   ## add vessels if needed
   if(!vessel_effect) xx <- c(xx, list(vessel_v=factor(rep(NA, length=Data$n_v))), list(ln_vessel=factor(NA)))

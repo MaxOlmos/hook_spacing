@@ -22,11 +22,11 @@ dyn.load( dynlib(Version))
 ## and full spatio-temporal (ST). orm=1 implies a random walk on hook
 ## spacing, form=2 is the parametric HS model.
 
-### Explore effects of key dimensions.
+### Explore effcets of key dimensions.
 ## Spacing vs model
-knots <- 100
+knots <- 1000
 d <- droplevels(subset(data.full, regcde=='3A'))
-vessel <- FALSE
+vessel <- TRUE
 fit1 <- run.logbook(d, n_knots=knots, model='NS', form=1, vessel=vessel)
 fit2 <- run.logbook(d, n_knots=knots, model='NS', form=2, vessel=vessel)
 fit3 <- run.logbook(d, n_knots=knots, model='NS', form=3, vessel=vessel)
@@ -36,18 +36,6 @@ fit6 <- run.logbook(d, n_knots=knots, model='ST', form=3, vessel=vessel)
 fits.all <- list(fit1, fit2, fit3, fit4, fit5, fit6)
 saveRDS(fits.all, file='results/fits.all.RDS')
 
-## Loop through each regarea and get CPUE from full model to compare with
-## survey
-regareas <- c('2A', '2B', '2C', '3A', '3B', '4A', '4B')
-knots <- 50
-fits.areas <- lapply(regareas, function(x){
-  d <- droplevels(subset(data.full, regcde==x))
-  xx <- run.logbook(data=d, n_knots=knots, model='ST', form=2,
-                    vessel=TRUE)
-  return(xx)
-})
-saveRDS(fits.areas, file='results/fits.areas.RDS')
-
 ### Fit to some simulated data. Base if off the full model results from 3A.
 fit <- readRDS('results/fits.areas.RDS')[[4]]
 d <- droplevels(subset(data.full, regcde=='3A'))
@@ -55,8 +43,6 @@ fits.sim <- ldply(1:20, function(i)
   simulate.fit(i=i, d=d, fit=fit, knots=1000, model='ST'))
 saveRDS(fits.sim, file='results/fits.sim.RDS')
 ggplot(fits.sim, aes(year, rel.error, group=rep)) + geom_line() + facet_wrap('trend')
-
-
 
 ## Cleanup
 dyn.unload( dynlib(Version))
