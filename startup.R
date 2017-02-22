@@ -37,8 +37,7 @@ hook_power <- function(spacing, alpha, beta, lambda){
 clean.TMB.files <- function(model.path){
   o <- paste0(model.path,'.o')
   dll <- paste0(model.path, '.dll')
-  ## if(is.loaded(dynlib(model.path)))
-    dyn.unload(dynlib(model.path))
+  tryCatch(expr=dyn.unload(dynlib(model.path)), error=function(cond){x=3})
   if(file.exists(dll)) trash <- file.remove(dll)
   if(file.exists(o)) trash <- file.remove(o)
 }
