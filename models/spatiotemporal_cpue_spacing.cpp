@@ -61,7 +61,6 @@ Type objective_function<Type>::operator() ()
   PARAMETER(beta_spacing);	   // from H&S formula
   //  PARAMETER(alpha_spacing);	   // from H&S formula
   PARAMETER(lambda);		   // from H&S formula
-  PARAMETER(spacing_0);		   // 1ft spacing effect for form=1
   // Variances
   PARAMETER(ln_tau_O);		  // spatial process
   PARAMETER(ln_tau_E);		  // spatio-temporal process
@@ -103,7 +102,7 @@ Type objective_function<Type>::operator() ()
   for(int ft=0; ft<n_ft; ft++){
     // smoother on effect of hook spacing
     if(form==1) {
-      if(ft==0) spacing(ft)=exp(spacing_0); // initialize at first dev
+      if(ft==0) spacing(ft)=1.0; // initialize at arbitrary level
       else spacing(ft)=spacing(ft-1)*exp(spacing_devs(ft));
     }
     // Multiplicative form used by H&S. Note the alpha term gets merged
@@ -112,6 +111,7 @@ Type objective_function<Type>::operator() ()
     if(form==2) spacing(ft)=(1-pow(exp(-beta_spacing*(ft+1)), lambda));
     if(form==3) spacing(ft)=1; // no effect
   }
+
   // Calculate relative hook power
   vector<Type> hook_power(n_ft);
   for(int ft=0; ft<n_ft; ft++){
@@ -125,7 +125,7 @@ Type objective_function<Type>::operator() ()
   for( int i=0; i<n_i; i++){
     mu_i(i) =
       // effective hooks
-      hooks_i(i)*hook_power(spacing_i(i)-1)*
+      hooks_i(i)*spacing(spacing_i(i)-1)*
       // density
       exp(intercept + beta_year(year_i(i)) +
 	  beta_depth*depth_i(i) + beta_depth2*depth_i(i)*depth_i(i) +
@@ -214,7 +214,6 @@ Type objective_function<Type>::operator() ()
   // ADREPORT(beta_hooksize); // hooksize effect
   ADREPORT(beta_depth);	   // linear depth effect
   ADREPORT(beta_depth2);   // quadratic depth effect
-  ADREPORT(spacing_0);
   ADREPORT(Sigma);	   	// observation
   // random effect variances
   ADREPORT(sigma_vessel);
