@@ -235,6 +235,7 @@ form.name <- function(form)  c('Non-parametric', 'Hamley and Skud', 'None')[form
 
 run.logbook <- function(dat, n_knots, model, form, vessel_effect, likelihood=1, trace=10){
 
+  message(paste0('Starting model ', model, ', form=',form, ', vessel=', vessel))
   ## Causes a nasty bug if extra factor levels are around so drop those
   dat <- droplevels(dat)
   n_years <- length(unique(dat$year))
