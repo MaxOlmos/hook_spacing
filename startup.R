@@ -228,9 +228,9 @@ make.inputs <- function(dat, n_knots, model, form,
   return(list(Data=Data, Params=Params, Random=Random[[model]], Map=Map[[model]]))
 }
 
-model.name <- function(model) switch(model, NS="No-Space", S='Space',
+model.name <- function(model) switch(model, NS="No Space", S='Space',
                        ST='Spatiotemporal')
-form.name <- function(form)  c('Non-parametric', 'Hamley and Skud', 'None')[form]
+form.name <- function(form)  c('Smoother', 'Parametric', 'Constant')[form]
 
 
 run.logbook <- function(dat, n_knots, model, form, vessel_effect, likelihood=1, trace=10){
