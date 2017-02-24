@@ -85,12 +85,12 @@ g <- ggplot(res, aes(n_knots, value, ymin=value-2*sd, ymax=value+2*sd)) +
 ggsave('plots/resolution_effect.png', g, width=7, height=5)
 
 ## Load main results
-empirical.results <- readRDS('results/empirical.results.RDS')
+experimental.results <- readRDS('results/experimental.results.RDS')
 logbook.re.results <- readRDS('results/logbook.re.results.RDS')
 logbook.hs.results <- readRDS('results/logbook.hs.results.RDS')
 
 ## Make CSV files for tables
-sd.pars <- rbind(cbind(model='empirical', empirical.results$sd.df),
+sd.pars <- rbind(cbind(model='experimental', experimental.results$sd.df),
                  cbind(model='logbook.re', logbook.re.results$sd.par),
                  cbind(model='logbook.hs', logbook.hs.results$sd.par))
 sd.pars <- subset(sd.pars, par !='cph_t')
@@ -101,7 +101,7 @@ ggsave('plots/parameter_estimates_by_model.png', g, width=7, height=5)
 write.table(x=sd.pars, file='results/sd.table.csv', sep=',', row.names=FALSE)
 
 ## Plot effect hook comparisons for the three models
-uncertainty.df <- rbind.fill(data.frame(model='empirical', empirical.results$uncertainty.df),
+uncertainty.df <- rbind.fill(data.frame(model='experimental', experimental.results$uncertainty.df),
       data.frame(model='logbook.re', logbook.re.results$sd.spacing),
       data.frame(model='logbook.hs', logbook.hs.results$sd.spacing))
 hs.original <- data.frame(spacing=1:max(uncertainty.df$spacing))

@@ -1,6 +1,6 @@
 source("startup.R")
 
-## load and process the empirical data
+## load and process the experimental data
 hs <- read.csv("data/hs_data.csv")
 hs <- droplevels(subset(hs, used=="Y" & lbs>0))
 hs$hooks <- with(hs, hooks.per.skate*skates)
@@ -15,7 +15,7 @@ summary(hs$spacing)
 
 ## Prepare TMB inputs
 Inputs <- make.inputs.experimental(hs)
-Version <- "models/empirical_spacing"
+Version <- "models/experimental_spacing"
 clean.TMB.files(Version)
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
@@ -34,10 +34,10 @@ uncertainty.df <- subset(xx, par=='hook_power')
 uncertainty.df$spacing <- 1:nrow(uncertainty.df)
 sd.df <- subset(xx, par!= 'hook_power')
 g <- ggplot(uncertainty.df, aes(spacing, value, ymax=value+2*sd, ymin=value-2*sd)) + geom_pointrange()
-empirical.results <- list(Obj=Obj, Opt=Opt, sdreport=temp,
+experimental.results <- list(Obj=Obj, Opt=Opt, sdreport=temp,
                           uncertainty.df=uncertainty.df, sd.df=sd.df)
-saveRDS(empirical.results, file='results/empirical.results.RDS')
+saveRDS(experimental.results, file='results/experimental.results.RDS')
 
 ## Clean up
 dyn.unload(dynlib(Version))
-rm(Obj, Opt, temp, uncertainty.df, empirical.results, Inputs)
+rm(Obj, Opt, temp, uncertainty.df, experimental.results, Inputs)
