@@ -19,7 +19,7 @@ Type objective_function<Type>::operator() ()
   DATA_VECTOR(catch_i); 	// the response variable
   DATA_VECTOR(hooks_i);		// number of hooks
   DATA_VECTOR(day_i);		// day relative to start of fishing
-  DATA_VECTOR(spacing_i);	// the independent variable spacing (ft)
+  DATA_FACTOR(spacing_i);	// the independent variable spacing (ft)
   DATA_IVECTOR(site_i);		// index for site
 
   // Fixed effects
@@ -41,15 +41,28 @@ Type objective_function<Type>::operator() ()
   // jnll_comp.setZero();		// initialize at zero
   Type jnll=0;
 
+  // Calculate spacing effect from parameters
+  int n_ft=45;
+  vector<Type> spacing(n_ft);
+  spacing.setZero();
+  for(int ft=0; ft<n_ft; ft++){
+    spacing(ft)=1-pow(exp(-beta*(ft+1)),lambda);
+  }
+  // Calculate relative hook power. Need to be careful with indexing
+  // here. ft=0 => a 1 foot spacing. Thus hook_power(0) is hook power at 1
+  // ft.
+  vector<Type> hook_power(n_ft);
+  for(int ft=0; ft<n_ft; ft++){
+    hook_power(ft)=spacing(ft)/spacing(17);
+  }
 
-  // Predicted catches
+  // Predicted catches= effective hooks * density * q (q=1)
   vector<Type> mu_i(n_i);
-  for( int i=0; i<n_i; i++){
+  for(int i=0; i<n_i; i++){
     mu_i(i) =
-      // spacing
-      (1-pow(exp(-beta*spacing_i(i)),lambda))*
-      // hooks
+      // Effective hooks
       hooks_i(i)*
+      hook_power(spacing_i(i)-1)*
       // site level density
       exp(eta_s(site_i(i))-day_i(i)*gamma);
   }
@@ -68,12 +81,6 @@ Type objective_function<Type>::operator() ()
   // Reporting
   // alpha tilde in paper
   Type max_ehook = 1/(1-pow(exp(-18*beta), lambda));
-  vector<Type> hook_power(70);
-  for(int i=0; i<70; i++){
-    // predict spacing effect for day=0 and mean site level
-    hook_power(i)=
-      (1-pow(exp(-beta*(i+1)),lambda))/ (1-pow(exp(-beta*18),lambda));
-  }
   REPORT(mu_i);
   ADREPORT(hook_power);
   ADREPORT(beta);

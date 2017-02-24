@@ -11,10 +11,12 @@ hs <- ddply(hs, .(group), mutate,
               daynumber=as.numeric(difftime(date,min(date), units="days")))
 hs <- hs[with(hs, order(group, date)),]
 hs$group <- as.numeric(hs$group)
+summary(hs$spacing)
 
 ## Prepare TMB inputs
 Inputs <- make.inputs.experimental(hs)
 Version <- "models/empirical_spacing"
+clean.TMB.files(Version)
 compile( paste0(Version,".cpp") )
 dyn.load( dynlib(Version) )
 
@@ -31,7 +33,7 @@ xx <- data.frame(par=names(temp$value), value=temp$value, sd=temp$sd)
 uncertainty.df <- subset(xx, par=='hook_power')
 uncertainty.df$spacing <- 1:nrow(uncertainty.df)
 sd.df <- subset(xx, par!= 'hook_power')
-ggplot(uncertainty.df, aes(spacing, value, ymax=value+2*sd, ymin=value-2*sd)) + geom_pointrange()
+g <- ggplot(uncertainty.df, aes(spacing, value, ymax=value+2*sd, ymin=value-2*sd)) + geom_pointrange()
 empirical.results <- list(Obj=Obj, Opt=Opt, sdreport=temp,
                           uncertainty.df=uncertainty.df, sd.df=sd.df)
 saveRDS(empirical.results, file='results/empirical.results.RDS')
