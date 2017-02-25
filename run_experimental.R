@@ -27,7 +27,7 @@ Obj$par
 Obj$env$beSilent()
 Opt <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
                control=list(trace=10, eval.max=1e4, iter.max=1e4),
-                            lower=Inputs$lower, upper=Inputs$upper)
+                            lower=Inputs$Lower, upper=Inputs$Upper)
 temp <- sdreport(Obj)
 xx <- data.frame(par=names(temp$value), value=temp$value, sd=temp$sd)
 uncertainty.df <- subset(xx, par=='hook_power')
