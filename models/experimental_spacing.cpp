@@ -37,8 +37,6 @@ Type objective_function<Type>::operator() ()
 
   // Objective function and bookkeeping
   using namespace density;
-  // vector<Type> jnll_comp(3);	// joint -log-likelihood in components
-  // jnll_comp.setZero();		// initialize at zero
   Type jnll=0;
 
   // Calculate spacing effect from parameters
@@ -61,8 +59,7 @@ Type objective_function<Type>::operator() ()
   for(int i=0; i<n_i; i++){
     mu_i(i) =
       // Effective hooks
-      hooks_i(i)*
-      hook_power(spacing_i(i)-1)*
+      hooks_i(i)* hook_power(spacing_i(i)-1)*
       // site level density
       exp(eta_s(site_i(i))-day_i(i)*gamma);
   }
@@ -74,12 +71,11 @@ Type objective_function<Type>::operator() ()
   }
   // Probability of the data, given random effects (likelihood)
   for( int i=0; i<n_i; i++){
-    Type test=10;
     jnll-= dlognorm(catch_i(i), log(mu_i(i)) , sigma_s(site_i(i)), true );
   }
 
   // Reporting
-  // alpha tilde in paper
+  // max_ehook is f_infinity in paper
   Type max_ehook = 1/(1-pow(exp(-18*beta), lambda));
   REPORT(mu_i);
   ADREPORT(hook_power);
