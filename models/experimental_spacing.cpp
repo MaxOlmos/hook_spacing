@@ -27,13 +27,13 @@ Type objective_function<Type>::operator() ()
   PARAMETER(eta_sd);		// SD of mean density
   PARAMETER(sigma_mean);	// mean Obs error
   PARAMETER(sigma_sd);		// sd of obs errors
-  PARAMETER(gamma);		// Impact of day, bounded (0,1)
-  PARAMETER(beta);		// non-linear effect of spacing
+  PARAMETER(gamma);			// Impact of day, bounded (0,1)
+  PARAMETER(beta);			// non-linear effect of spacing
   PARAMETER(lambda);		// exponent that controls non-linearity = 1
 
   // Random effects
-  PARAMETER_VECTOR(eta_s);	  // site level random effects for logcpue
-  PARAMETER_VECTOR(sigma_s); // observation error at each site
+  PARAMETER_VECTOR(eta_s);	 // site level random effects for logcpue
+  PARAMETER_VECTOR(sigma_s); // observation sd at each site
 
   // Objective function and bookkeeping
   using namespace density;
@@ -71,7 +71,7 @@ Type objective_function<Type>::operator() ()
   }
   // Probability of the data, given random effects (likelihood)
   for( int i=0; i<n_i; i++){
-    jnll-= dlognorm(catch_i(i), log(mu_i(i)) , sigma_s(site_i(i)), true );
+    jnll-= dnorm(log(catch_i(i)), log(mu_i(i)) , sigma_s(site_i(i)), true );
   }
 
   // Reporting
