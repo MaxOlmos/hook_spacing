@@ -55,7 +55,7 @@ cpue.sd.normalized <- ddply(cpue.sd, .(model, form), mutate,
                             lwr2=lwr/mean(value))
 
 ## experimental results
-hs.results <- readRDS('results/empirical.results.RDS')
+hs.results <- readRDS('results/experimental.results.RDS')
 hs.table <- hs.results$sd.df
 hs.table$table <- with(hs.table,
        paste0(formatC(value,  width=3, digits=3), " (", formatC(sd, width=3,digits=3),  ")"))
