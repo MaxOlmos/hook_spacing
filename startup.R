@@ -119,16 +119,19 @@ create.spde <- function(dat, n_knots, make.plot=FALSE, jitter=.3){
   return(list(mesh=mesh, spde=spde, cluster=knots$cluster, loc_centers=loc_centers))
 }
 
+## This function generates an input list from data and other arguments,
+## which can then be used in TMB::MakeADFun to build the model. The list
+## includes Data, Params (inits), Map, and Random elements.
 make.inputs <- function(dat, n_knots, model, form,
   likelihood=1, vessel_effect=FALSE,  n_points_area=1e3, ...){
+  ## Make the mesh grid using INLA
   spde <- create.spde(dat=dat, n_knots=n_knots)
   loc <- spde$mesh$loc[,1:2]
   n_s <- nrow(loc)
   ## Calculate area of each SPDE grid by generating random points and
   ## seeing which proportion fall into each grid. This converges to area as
   ## the points go to Inf.
-  loc_extrapolation <-
-    expand.grid(
+  loc_extrapolation <- expand.grid(
       "longitude"=seq(min(dat$longitude), max(dat$longitude),length=n_points_area),
       "latitude"=seq(min(dat$latitude), max(dat$latitude),length=n_points_area))
   NN_extrapolation <- nn2( data=loc, query=loc_extrapolation, k=1 )
@@ -137,11 +140,11 @@ make.inputs <- function(dat, n_knots, model, form,
   ## test <- cbind(loc_extrapolation, idx=NN_extrapolation$nn.idx)
   ## ggplot(test, aes(longitude,latitude, color=idx)) + geom_point()
 
-  ## Make inputs for all three models
+  ## Make inputs depending on the model and spacing form
   model <- match.arg(model, choices=c('NS', "S", "ST"))
-  if(model=='NS') space <- 0
-  if(model=='S') space <- 1
-  if(model=='ST') space <- 2
+  if(model=='NS') space <- 0 # no space
+  if(model=='S') space <- 1 # spatial only (not used in paper)
+  if(model=='ST') space <- 2 # spatiotemporal
   Data <- list(likelihood=likelihood, form=form, space=space,
                catch_i=dat$catch,
                hooks_i=dat$hooks,
@@ -200,13 +203,11 @@ make.inputs <- function(dat, n_knots, model, form,
   if(form==1) {
     ## random walk on spacing
     xx <- list(beta_spacing=factor(NA), lambda=factor(NA))
-  }
-  if(form==2) {
+  } else  if(form==2) {
     ## H&S form on spacing
     xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
                ln_spacing=factor(NA))
-  }
-  if(form==3) {
+  } else if(form==3) {
     ## No effect (set to zero in the TMB model)
     xx <- list(spacing_devs=factor(rep(NA, length=Data$n_ft)),
                ln_spacing=factor(NA), beta_spacing=factor(NA),
@@ -232,8 +233,9 @@ model.name <- function(model) switch(model, NS="No Space", S='Space',
                        ST='Spatiotemporal')
 form.name <- function(form)  c('Smoother', 'Parametric', 'Constant')[form]
 
-
-run.logbook <- function(dat, n_knots, model, form, vessel_effect, likelihood=1, trace=10){
+## This function runs the spatiotemporal model for the logbook data.
+run.logbook <- function(dat, n_knots, model, form, vessel_effect,
+                        likelihood=1, trace=10){
 
   message(paste0('Starting model ', model, ', form=',form, ', vessel=', vessel))
   ## Causes a nasty bug if extra factor levels are around so drop those
