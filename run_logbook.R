@@ -34,7 +34,11 @@ fit4 <- run.logbook(d, n_knots=knots, model='ST', form=1, vessel=vessel)
 fit5 <- run.logbook(d, n_knots=knots, model='ST', form=2, vessel=vessel)
 fit6 <- run.logbook(d, n_knots=knots, model='ST', form=3, vessel=vessel)
 fits.all <- list(fit1, fit2, fit3, fit4, fit5, fit6)
+table.runtime <- ldply(fits.all, summarize,
+ model.name=model.name, form.name=form.name, runtime=round(runtime,2))
+table.runtime
 saveRDS(fits.all, file='results/fits.all.RDS')
+
 
 ### Fit to some simulated data. Base if off the full model results from 3A.
 fit <- readRDS('results/fits.areas.RDS')[[4]]
@@ -47,6 +51,30 @@ ggplot(fits.sim, aes(year, rel.error, group=rep)) + geom_line() + facet_wrap('tr
 ## Cleanup
 dyn.unload( dynlib(Version))
 
+## Increase spatial resolution and see what happens
+knots <- c(100, 150, 200, 300, 500, 800, 1000, 1200, 1500, 2000, 2500)
+fits.res <- list()
+for(i in 1:length(knots)){
+  k <- knots[i]
+  print(paste0('Starting knots: ', k))
+  fits.res[[i]] <-
+    run.logbook(d, n_knots=k, model='ST', form=2, vessel=FALSE)
+  ## Might crash so save at each iteration
+  saveRDS(fits.res, file='results/fits.res.RDS')
+}
+fits.res <- readRDS('results/fits.res.RDS')
+res <- do.call(rbind, lapply(fits.res, function(x)
+  cbind(knots=x$n_knots, x$sd.par[,1:3])))
+res <- res[res$par %in% c('intercept', 'beta_depth','SigmaE', 'Range', 'Sigma',
+                 'SigmaO', 'lamdba'),]
+res.long <- melt(res, id.vars=c('knots', 'sd', 'par'))
+g <- ggplot(res.long, aes(knots, value, group=par)) +
+  facet_wrap('par', scales='free_y') + geom_line()
+ggsave('plots/results_by_resolution.png', g, width=ggwidth, height=ggheight)
+runtimes <- do.call(rbind, lapply(fits.res, function(x)
+  data.frame(knots=x$n_knots, runtime=x$runtime)))
+g <- ggplot(runtimes, aes(knots, runtime)) + geom_line()
+ggsave('plots/runtime_by_resolution.png', g, width=ggwidth, height=ggheight)
 
 ### ------------------------------------------------------------
 ### OLD CODE
@@ -115,37 +143,5 @@ dyn.unload( dynlib(Version))
 
 ## plot(resids~spacing, data=temp2)
 
-## ## Increase spatial resolution and see what happens
-## knots <- c(100, 150, 200, 300, 500, 800, 1000)
-## Opt.list <- Report.list <- SD.list <- list()
-## m <- 'M3'
-## for(k in knots){
-##   print(paste0('Starting knots: ', k))
-##   Inputs <- make.inputs(k, m)
-##   Obj <- MakeADFun(data=Inputs$Data, parameters=Inputs$Params,
-##                    random=Inputs$Random, map=Inputs$Map)
-##   trash <- Obj$env$beSilent()
-##   start <- Sys.time()
-##   temp <- nlminb( start=Obj$par, objective=Obj$fn, gradient=Obj$gr,
-##                  control=list(trace=50, eval.max=1e4, iter.max=1e4))
-##   Opt.list[[k]] <- nlminb( start=temp$par, objective=Obj$fn, gradient=Obj$gr,
-##                      control=list(trace=50, eval.max=1e4, iter.max=1e4))
-##   Opt.list[[k]][["final_diagnostics"]] <-
-##     data.frame( "Name"=names(Obj$par),
-##                "final_gradient"=as.numeric(Obj$gr(Opt.list[[k]]$par)))
-##   Report.list[[k]] <- Obj$report()
-##   Report.list[[k]]$time <-
-##       as.numeric(difftime(Sys.time(),start, units='mins'))
-##   SD.list[[k]] <- sdreport(Obj)
-## }
-## Results <- do.call(rbind, lapply(Report.list, function(x)
-##   data.frame(x[c('intercept', 'beta_depth','SigmaE', 'Range', 'Sigma',
-##                  'SigmaO', 'jnll', 'time')])))
-## Results$knots <- knots[1:7]
-## Results.long <- melt(Results, id.vars='knots')
-## g <- ggplot(Results.long, aes(knots, (value), group=variable)) +
-##   facet_wrap('variable', scales='free_y') + geom_line()
-## g
-## ggsave('plots/results_by_resolution.png', g, width=ggwidth, height=ggheight)
 
 
