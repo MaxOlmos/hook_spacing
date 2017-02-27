@@ -299,7 +299,7 @@ run.logbook <- function(dat, n_knots, model, form, vessel_effect,
 #' @param beta A coefficient for altering the spacing. If NULL the original
 #'   spacing left.
 #' @return A modified data set where catch has been replaced
-simulate.data <- function(n_sites, n_knots, beta, lambda=1, n_points_area=1e3,
+simulate.data <- function(n_sites, n_knots, beta, lambda=1, n_vessels=50, n_points_area=1e3,
                           slope=0){
   N <- n_sites
   ff <- function(x) sample(x, size=N, replace=TRUE)
@@ -308,7 +308,8 @@ simulate.data <- function(n_sites, n_knots, beta, lambda=1, n_points_area=1e3,
     geartype=ff(c('autoline', 'fixed', 'snap')),
     longitude = runif(N, -1,1),
     latitude = runif(N, -1,1),
-    hooks = rpois(N, lambda=100))
+    hooks = rpois(N, lambda=100)
+    vessel=ff(1:n_vessels))
   ## Create simulated spatial process, using output from fit
   n_years <- length(unique(dat$year))
   if(n_knots >= N){
@@ -333,13 +334,16 @@ simulate.data <- function(n_sites, n_knots, beta, lambda=1, n_points_area=1e3,
   ## Use rough estimates from
   SD_omega <- 0.40
   SD_epsilon <- .15
+  SD_vessel <- 0.3
   Sigma <- 0.8
-  Scale <- .2
-  intercept <- .1
+  Scale <- 0.2
+  intercept <- 0.1
   beta_years <- c(0, 0.11, 0.145, 0.08, -0.034, 0.075, 0.093, 0.114, 0.142,
                   0.053, -0.034, -0.065, -0.087, -0.218, -0.31, -0.408,
                   -0.498, -0.658, -0.719, -0.583)
-  beta_geartype <- c(0, .6, .7)
+  beta_geartype <- c(0, 0.6, 0.7)
+  ## Simulate random vessel effects
+  beta_vessel <- rnorm(n=length(unique(dat$vessel)), 0, SD_vessel)
 
   ## Spatial effects
   RF_omega <- RMgauss(var=SD_omega^2, scale=Scale)
@@ -374,7 +378,7 @@ simulate.data <- function(n_sites, n_knots, beta, lambda=1, n_points_area=1e3,
   ## Expected catch is density*q*hooks*f(spacing)
   dat$mu_i <-
     dat$density*                       # denisty
-    exp(beta_geartype[dat$geartype])*  # q
+    exp(beta_geartype[dat$geartype] + beta_vessel[dat$vessel])*  # q
     dat$hooks *                        # hooks
     hook_power(dat$spacing, alpha=1, beta=beta, lambda=lambda) # hook power
 
