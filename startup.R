@@ -191,7 +191,7 @@ make.inputs <- function(dat, n_knots, model, form,
   }
   ## Need to fix first level of each factor at 0 so they are
   ## identifiable. Get merged into the intercept. I.e., contrasts in R.
-   list.factors <- list(
+  list.factors <- list(
      beta_year=factor(c(NA, 1:(length(levels(dat$year))-1))),
     beta_geartype=factor(c(NA, 1:(length(levels(dat$geartype))-1))),
     ## beta_month=factor(c(NA, 1:(length(levels(dat$month))-1))),
@@ -299,17 +299,21 @@ run.logbook <- function(dat, n_knots, model, form, vessel_effect,
 #' @param beta A coefficient for altering the spacing. If NULL the original
 #'   spacing left.
 #' @return A modified data set where catch has been replaced
-simulate.data <- function(n_sites, n_knots, beta, lambda=1, n_vessels=50, n_points_area=1e3,
-                          slope=0){
+simulate.data <-
+  function(n_sites, n_knots, beta, lambda=1, n_vessels=50,
+           n_points_area=1e3, slope=0){
   N <- n_sites
   ff <- function(x) sample(x, size=N, replace=TRUE)
   dat <- data.frame(
-    year=ff(1:20),
-    geartype=ff(c('autoline', 'fixed', 'snap')),
+    year=as.factor(ff(1:20)),
+    geartype=as.factor(ff(c('autoline', 'fixed', 'snap'))),
     longitude = runif(N, -1,1),
     latitude = runif(N, -1,1),
-    hooks = rpois(N, lambda=100)
-    vessel=ff(1:n_vessels))
+    hooks = rpois(N, lambda=100),
+    vessel=as.factor(ff(1:n_vessels)),
+    depth=rnorm(N, 70, 10),
+    month=as.factor(ff(1:12)),
+    hooksize=as.factor(ff(1:3)))
   ## Create simulated spatial process, using output from fit
   n_years <- length(unique(dat$year))
   if(n_knots >= N){
