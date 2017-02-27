@@ -299,15 +299,22 @@ run.logbook <- function(dat, n_knots, model, form, vessel_effect,
 #' @param beta A coefficient for altering the spacing. If NULL the original
 #'   spacing left.
 #' @return A modified data set where catch has been replaced
-simulate.data <- function(dat, n_knots, beta, lambda=1, n_points_area=1e3,
+simulate.data <- function(n_sites, n_knots, beta, lambda=1, n_points_area=1e3,
                           slope=0){
-  dat <- data.frame(expand.grid(year=1:20, geartype=c('autoline', 'fixed', 'snap'),
-                                site=1:50))
-  dat$longitude <- runif(n=nrow(dat), -1,1)
-  dat$latitude <- runif(n=nrow(dat), -1,1)
-  dat$hooks <- rpois(n=nrow(dat), lambda=100)
+  N <- n_sites
+  ff <- function(x) sample(x, size=N, replace=TRUE)
+  dat <- data.frame(
+    year=ff(1:20),
+    geartype=ff(c('autoline', 'fixed', 'snap')),
+    longitude = runif(N, -1,1),
+    latitude = runif(N, -1,1),
+    hooks = rpois(N, lambda=100))
   ## Create simulated spatial process, using output from fit
   n_years <- length(unique(dat$year))
+  if(n_knots >= N){
+    warning("More knots than data points, setting to N-1")
+    n_knots <- N-1
+  }
   spde <- create.spde(dat=dat, n_knots=n_knots)
   loc <- spde$mesh$loc[,1:2]
   loc_centers <- spde$loc_centers
