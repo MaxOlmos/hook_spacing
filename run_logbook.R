@@ -24,7 +24,7 @@ dyn.load( dynlib(Version))
 
 ### Explore effcets of key dimensions.
 ## Spacing vs model
-knots <- 1000
+knots <- 2000
 d <- droplevels(subset(data.full, regcde=='3A'))
 vessel <- TRUE
 fit1 <- run.logbook(d, n_knots=knots, model='NS', form=1, vessel=vessel)
