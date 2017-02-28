@@ -191,7 +191,7 @@ make.inputs <- function(dat, n_knots, model, form,
   }
   ## Need to fix first level of each factor at 0 so they are
   ## identifiable. Get merged into the intercept. I.e., contrasts in R.
-   list.factors <- list(
+  list.factors <- list(
      beta_year=factor(c(NA, 1:(length(levels(dat$year))-1))),
     beta_geartype=factor(c(NA, 1:(length(levels(dat$geartype))-1))),
     ## beta_month=factor(c(NA, 1:(length(levels(dat$month))-1))),
@@ -294,16 +294,32 @@ run.logbook <- function(dat, n_knots, model, form, vessel_effect,
 }
 
 #' @param data A data frame with the original data
-#' @param fit A fit to  an existing model. The parameter estimates will be
+#' @param fit A fit to an existing model. The parameter estimates will be
 #'   used.
 #' @param beta A coefficient for altering the spacing. If NULL the original
 #'   spacing left.
 #' @return A modified data set where catch has been replaced
-simulate.data <- function(dat, n_knots, fit, beta=NULL){
-  dat <- droplevels(dat)
+simulate.data <-
+  function(n_sites, n_knots, beta, lambda=1, n_vessels=50,
+           n_points_area=1e3, slope=0){
+  N <- n_sites
+  ff <- function(x) sample(x, size=N, replace=TRUE)
+  dat <- data.frame(
+    year=as.factor(ff(1:20)),
+    geartype=as.factor(ff(c('autoline', 'fixed', 'snap'))),
+    longitude = runif(N, -1,1),
+    latitude = runif(N, -1,1),
+    hooks = rpois(N, lambda=100),
+    vessel=as.factor(ff(1:n_vessels)),
+    depth=rnorm(N, 70, 10),
+    month=as.factor(ff(1:12)),
+    hooksize=as.factor(ff(1:3)))
   ## Create simulated spatial process, using output from fit
-  n_points_area <- 1e3
   n_years <- length(unique(dat$year))
+  if(n_knots >= N){
+    warning("More knots than data points, setting to N-1")
+    n_knots <- N-1
+  }
   spde <- create.spde(dat=dat, n_knots=n_knots)
   loc <- spde$mesh$loc[,1:2]
   loc_centers <- spde$loc_centers
@@ -316,16 +332,22 @@ simulate.data <- function(dat, n_knots, fit, beta=NULL){
       "longitude"=seq(min(dat$longitude), max(dat$longitude),length=n_points_area),
       "latitude"=seq(min(dat$latitude), max(dat$latitude),length=n_points_area))
   NN_extrapolation <- nn2( data=loc, query=loc_extrapolation, k=1 )
+  ## Calculate areas from points
   area_s <- table(factor(NN_extrapolation$nn.idx,levels=1:n_s)) / nrow(loc_extrapolation)
-  SD_omega <- fit$sd.par$value[fit$sd.par$par=='SigmaO']
-  SD_epsilon <- fit$sd.par$value[fit$sd.par$par=='SigmaE']
-  Sigma <- fit$sd.par$value[fit$sd.par$par=='Sigma']
-  Scale <- .2#fit$sd.par$value[fit$sd.par$par=='Range']
-  intercept <- fit$sd.par$value[fit$sd.par$par=='intercept']
-  beta_years <- fit$sd.par$value[grep('beta_year', fit$sd.par$par2)]
-  beta_geartype <- fit$sd.par$value[grep('beta_geartype', fit$sd.par$par2)]
-  beta_spacing <- fit$sd.par$value[fit$sd.par$par=='beta_spacing']
-  lambda <- fit$sd.par$value[fit$sd.par$par=='lambda']
+
+  ## Use rough estimates from
+  SD_omega <- 0.40
+  SD_epsilon <- .15
+  SD_vessel <- 0.3
+  Sigma <- 0.8
+  Scale <- 0.2
+  intercept <- 0.1
+  beta_years <- c(0, 0.11, 0.145, 0.08, -0.034, 0.075, 0.093, 0.114, 0.142,
+                  0.053, -0.034, -0.065, -0.087, -0.218, -0.31, -0.408,
+                  -0.498, -0.658, -0.719, -0.583)
+  beta_geartype <- c(0, 0.6, 0.7)
+  ## Simulate random vessel effects
+  beta_vessel <- rnorm(n=length(unique(dat$vessel)), 0, SD_vessel)
 
   ## Spatial effects
   RF_omega <- RMgauss(var=SD_omega^2, scale=Scale)
@@ -341,36 +363,32 @@ simulate.data <- function(dat, n_knots, fit, beta=NULL){
       RFsimulate(model=RF_epsilon, x=loc_centers[,1], y=loc_centers[,2])@data[,1]
     log_D_st[,t] <- intercept + Epsilon_st[,t] + Omega_s + beta_years[t]
   }
-  density_t = colSums( exp(log_D_st) )
+  density_t = colSums(exp(log_D_st))
   ## Now match up expected density with each set
   dat$density <- exp(log_D_st[cbind(spde$cluster, as.numeric(dat$year))])
-
+  ## ## Quick check on clusters
+  ## dat$cluster <- spde$cluster
   ## ggplot(dat, aes(longitude,latitude, col=cluster)) +
   ##   geom_point(size=.5, alpha=.5) + scale_color_gradient(low='blue', high='red')
-  ## Now sample from the truth
-  ## y~1+year+geartype+month+hooksize+depth + spatial +spatiotemporal
 
-  ## In some cases want to alter the spacing to create trends in hook
-  ## spacing. Assuming for now a simple linear decrease over time. If
-  ## beta=1 this declines, if beta=0 it is constant. If NULL the original
-  ## spacing is used.
-  if(!is.null(beta)){
-    years <- as.numeric(dat$year)
-    dat$spacing <- pmax(3, rnbinom(n=nrow(dat), size=35,
-                                    mu=20-beta*years))
-    ##    dat$spacing <- pmax(3, rpois(n=nrow(dat), lambda=15-beta*years))
-     ggplot(dat, aes(years, spacing)) + geom_jitter(alpha=.05) + geom_smooth()
-  }
+  ## Simulate spacings. In some cases want to alter the spacing to create
+  ## trends in hook spacing. Assuming for now a simple linear decrease over
+  ## time. If beta=1 this declines, if beta=0 it is constant. If NULL the
+  ## original spacing is used.
+  years <- as.numeric(dat$year)
+  dat$spacing <- pmax(3, rnbinom(n=nrow(dat), size=35, mu=20-slope*years))
+  ##  ggplot(dat, aes(years, spacing)) + geom_jitter(alpha=.05) + geom_smooth()
+
   ## Expected catch is density*q*hooks*f(spacing)
   dat$mu_i <-
     dat$density*                       # denisty
-    exp(beta_geartype[dat$geartype])*  # q
+    exp(beta_geartype[dat$geartype] + beta_vessel[dat$vessel])*  # q
     dat$hooks *                        # hooks
-    hook_power(dat$spacing, alpha=1, beta=beta_spacing, lambda=lambda) # hook power
+    hook_power(dat$spacing, alpha=1, beta=beta, lambda=lambda) # hook power
 
   ## Simulate samples for each site and year
   dat$catch <- exp(rnorm(n=length(dat$mu_i), mean=log(dat$mu_i), sd=Sigma))
-  return( list(data=dat, density_t=density_t) )
+  return( list(data=dat, density_t=density_t))
 }
 
 plot.spacing.fit <- function(results, multiple.fits=FALSE){

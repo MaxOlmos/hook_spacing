@@ -1,21 +1,18 @@
 ### ------------------------------------------------------------
-## Step 1: read in and prep the data for this model
+## Step 1: read in and prep the data, and compile and link model
 source('startup.R')
-## Load data for all regulatory areas, to be subsetted later
+## If using real data, use this data set.
 data.full <- readRDS(file='data/data.RDS')
-
-## data.temp <- ddply(data, .(geartype, year), summarize,
-##                        total.catch=sum(catch))
-## data.summarized <- ddply(data.temp, .(year), mutate, pct.catch=total.catch/sum(total.catch))
-## saveRDS(data.summarized, file='results/data.summarized.RDS')
-
-## data.simulated <- data
-## data.simulated$catch <- with(data, hooks*exp(-.1+rnorm(n=nrow(data), mean=0, sd=.1)))
-## data <- data.simulated
-Version <- "models/spatiotemporal_cpue_spacing"
-clean.TMB.files(Version)
-compile( paste0(Version,".cpp"))
-dyn.load( dynlib(Version))
+d <- droplevels(subset(data.full, regcde=='3A'))
+## Otherwise can simulate a set like this. See function for more control.
+data <- simulate.data(n_sites=10000, n_knots=200, beta=0.06)
+d <- data$dat                           # Simulated longline sets
+density <- data$density_t               # True relative abundance
+## Compile and link TMB model
+m <- "models/spatiotemporal_cpue_spacing"
+## clean.TMB.files(m)
+compile( paste0(m,".cpp"))
+dyn.load( dynlib(m))
 
 ### ------------------------------------------------------------
 ## Step 2. Model exploration. Models= no spatial effect (NS), spatiaggl model (S)
@@ -24,9 +21,8 @@ dyn.load( dynlib(Version))
 
 ### Explore effcets of key dimensions.
 ## Spacing vs model
-knots <- 2000
-d <- droplevels(subset(data.full, regcde=='3A'))
-vessel <- TRUE
+knots <- 10
+vessel <- FALSE
 fit1 <- run.logbook(d, n_knots=knots, model='NS', form=1, vessel=vessel)
 fit2 <- run.logbook(d, n_knots=knots, model='NS', form=2, vessel=vessel)
 fit3 <- run.logbook(d, n_knots=knots, model='NS', form=3, vessel=vessel)
@@ -38,19 +34,11 @@ table.runtime <- ldply(fits.all, summarize,
  model.name=model.name, form.name=form.name, runtime=round(runtime,2))
 table.runtime
 saveRDS(fits.all, file='results/fits.all.RDS')
-
-
-### Fit to some simulated data. Base if off the full model results from 3A.
-fit <- readRDS('results/fits.areas.RDS')[[4]]
-d <- droplevels(subset(data.full, regcde=='3A'))
-fits.sim <- ldply(1:20, function(i)
-  simulate.fit(i=i, d=d, fit=fit, knots=1000, model='ST'))
-saveRDS(fits.sim, file='results/fits.sim.RDS')
-ggplot(fits.sim, aes(year, rel.error, group=rep)) + geom_line() + facet_wrap('trend')
-
 ## Cleanup
-dyn.unload( dynlib(Version))
+dyn.unload(dynlib(m))
 
+## Run test of resolution. Takes a very long time!
+if(FALSE){
 ## Increase spatial resolution and see what happens
 knots <- c(100, 150, 200, 300, 500, 800, 1000, 1200, 1500, 2000, 2500)
 fits.res <- list()
@@ -75,9 +63,18 @@ runtimes <- do.call(rbind, lapply(fits.res, function(x)
   data.frame(knots=x$n_knots, runtime=x$runtime)))
 g <- ggplot(runtimes, aes(knots, runtime)) + geom_line()
 ggsave('plots/runtime_by_resolution.png', g, width=ggwidth, height=ggheight)
-
+}
 ### ------------------------------------------------------------
 ### OLD CODE
+
+## ### Fit to some simulated data. Base if off the full model results from 3A.
+## fit <- readRDS('results/..'
+## d <- droplevels(subset(data.full, regcde=='3A'))
+## fits.sim <- ldply(1:20, function(i)
+##   simulate.fit(i=i, d=d, fit=fit, knots=1000, model='ST'))
+## saveRDS(fits.sim, file='results/fits.sim.RDS')
+## ggplot(fits.sim, aes(year, rel.error, group=rep)) + geom_line() + facet_wrap('trend')
+
 
 ## ## Test code. Track parameter traces for plotting
 ## Inputs <- make.inputs(n_knots=50, model='S', form=1, likelihood=1)
