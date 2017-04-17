@@ -237,7 +237,7 @@ form.name <- function(form)  c('Smoother', 'Parametric', 'Constant')[form]
 run.logbook <- function(dat, n_knots, model, form, vessel_effect,
                         likelihood=1, trace=10){
 
-  message(paste0('Starting model ', model, ', form=',form, ', vessel=', vessel))
+  message(paste0('Starting model ', model, ', form=',form, ', vessel=', vessel_effect))
   ## Causes a nasty bug if extra factor levels are around so drop those
   dat <- droplevels(dat)
   n_years <- length(unique(dat$year))
