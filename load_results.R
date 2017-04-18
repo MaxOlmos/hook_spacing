@@ -5,6 +5,7 @@ df.summarized <- readRDS('results/df.summarized.RDS')
 
 survey <- readRDS('data/survey.RDS')
 fits.areas <- readRDS('results/fits.areas.RDS')
+regareas <- c('2A', '2B', '2C', '3A', '3B', '4A', '4B')
 cpue.areas <- ldply(seq_along(regareas), function(x)
   cbind(data='logbook', regarea=regareas[x], fits.areas[[x]]$sd.density))
 cpue.areas$se <- cpue.areas$sd
