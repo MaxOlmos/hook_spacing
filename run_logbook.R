@@ -20,8 +20,8 @@ dyn.load( dynlib(m))
 
 ### Explore effcets of key dimensions.
 ## Spacing vs model
-knots <- 10
-vessel <- FALSE
+knots <- 2000
+vessel <- TRUE
 fit1 <- run.logbook(d, n_knots=knots, model='NS', form=1, vessel=vessel)
 fit2 <- run.logbook(d, n_knots=knots, model='NS', form=2, vessel=vessel)
 fit3 <- run.logbook(d, n_knots=knots, model='NS', form=3, vessel=vessel)
@@ -35,5 +35,14 @@ table.runtime
 saveRDS(fits.all, file='results/fits.all.RDS')
 ## Cleanup
 dyn.unload(dynlib(m))
+
+## Test vessel effect
+knots <- 10
+v0 <- run.logbook(d, n_knots=knots, model='NS', form=2, vessel=FALSE)
+v1 <- run.logbook(d, n_knots=knots, model='NS', form=2, vessel=TRUE)
+v0$sd.par[30,2]
+v1$sd.par[30,2]
+## % reduction
+(v0$sd.par[30,2]-v1$sd.par[30,2])/v1$sd.par[30,2]
 
 ### End of file
