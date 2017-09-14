@@ -1,4 +1,22 @@
+/// TMB model code for a CPUE standardization model which includes
+/// spatiotemporal effects and a hook spacing effect. This is the base
+/// model for commercial logbook data from:
+
+// Monnahan and Stewart (in review), The effect of hook spacing on longline
+// catch rates: implications for catch rate standardization. Fisheries
+// Research.
+
+// See file run_analysis.R to recreate and further use for this model.
+
+// The spatial structure and hook spacing relationship can be chosen via
+// input options "space" and "form". Data processing is done in R and
+// passed to TMB.
+
+// Modified by Cole Monnahan from a model file from Jim Thorson. 
+
 #include <TMB.hpp>
+//// Can also choose which likelihood to use. Wasn't important for my case
+// but left here for now.
 // lognormal density
 template<class Type>
 Type dlognorm(Type x, Type meanlog, Type sdlog, int give_log=0){
@@ -12,13 +30,8 @@ Type dinvgauss(Type x, Type mean, Type shape, int give_log=0){
   Type logres = 0.5*log(shape) - 0.5*log(2*M_PI*pow(x,3)) - (shape * pow(x-mean,2) / (2*pow(mean,2)*x));
   if(give_log) return logres; else return exp(logres);
 }
-// Function for detecting NAs
-template<class Type>
-bool isNA(Type x){
-  return R_IsNA(asDouble(x));
-}
 
-// Model code
+//// Main model code
 template<class Type>
 Type objective_function<Type>::operator() ()
 {
@@ -75,16 +88,16 @@ Type objective_function<Type>::operator() ()
   // This is a matrix of (centers by years)
   PARAMETER_ARRAY(epsilon_st);	// spatio-temporal effects; n_s by n_t matrix
 
-  // Objective function and bookkeeping
+  // Objective function is sum of negative log likelihood components
   using namespace density;
   int n_i = catch_i.size();	// number of observations
   Type nll_likelihood=0;	// likelihood of data
-  Type nll_omega=0;		// spatial
-  Type nll_epsilon=0;		// spatio-temporal
-  Type nll_spacing=0;		// RW on hook spacing
+  Type nll_omega=0;		// spatial effects
+  Type nll_epsilon=0;		// spatio-temporal effects
+  Type nll_spacing=0;		// smoother on hook spacing
   Type nll_vessel=0;		// vessel effect
 
-  //// Derived quantities
+  //// Derived quantities, given parameters
   // Geospatial
   Type Range = sqrt(8) / exp( ln_kappa );
   Type SigmaO = 1 / sqrt(4 * M_PI * exp(2*ln_tau_O) * exp(2*ln_kappa));
